@@ -2,6 +2,14 @@
 
 ## 20140508
 
+0.0.1: Correct the paths and the working directory.
+
+1. ~ Both arguments expanded with File.expand_path().
+2. ~ chdir to the repository rather than the revisions root.
+3. ~ The revisions glob: now by absolute path.
+
+## 20140508
+
 0.0.0: Copy each revision into a repository and commit it.
 
 1. + bin/git-importall
