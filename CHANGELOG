@@ -1,0 +1,7 @@
+# CHANGELOG
+
+## 20140508
+
+0.0.0: Copy each revision into a repository and commit it.
+
+1. + bin/git-importall

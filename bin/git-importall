@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# git-importall
+
+# 20140508
+# 0.0.0
+
+require 'Array/natural_sortX'
+require 'fileutils'
+
+revisions_root = ARG[0]
+repo_dir = ARG[1]
+
+Dir.chdir(revisions_root)
+
+Dir['*'].natural_sort!.each do |revision|
+  revision = File.expand_path(revision)
+  FileUtils.cp_pr(revision, repo_dir)
+  Dir.chdir(repo_dir)
+  system 'git commit -a'
+end
