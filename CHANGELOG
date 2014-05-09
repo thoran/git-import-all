@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 20140510
+
+0.0.2: Echo commands and hold off committing while testing.
+
+1. /ARG/ARGV/
+2. + Echoing of each command before it is run.
+3. ~ Commented out the commit.
+
 ## 20140508
 
 0.0.1: Correct the paths and the working directory.
