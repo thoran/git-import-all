@@ -2,6 +2,12 @@
 
 ## 20140510
 
+0.0.10: Remove directories as well as files.
+
+1. /FileUtils.rm_f()/FileUtils.rm_rf()/
+
+## 20140510
+
 0.0.9: Give the automatic commits a message.
 
 1. ~ The commit message: an empty string replaced by "Committed automatically by git-importall."
