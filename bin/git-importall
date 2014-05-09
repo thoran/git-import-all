@@ -2,7 +2,7 @@
 # git-importall
 
 # 20140510
-# 0.0.8
+# 0.0.9
 
 require 'Array/natural_sortX'
 require 'fileutils'
@@ -29,8 +29,8 @@ Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
   puts 'git add .'
   system 'git add .'
 
-  puts 'git commit -m ""'
-  system 'git commit -m ""'
+  puts 'git commit -m "Committed automatically by git-importall."'
+  system 'git commit -m "Committed automatically by git-importall."'
 end
 
 puts 'git push'

@@ -2,6 +2,12 @@
 
 ## 20140510
 
+0.0.9: Give the automatic commits a message.
+
+1. ~ The commit message: an empty string replaced by "Committed automatically by git-importall."
+
+## 20140510
+
 0.0.8: Supply a commit message, since git commit alone opens an editor.
 
 1. /git commit/git commit -m ""/
