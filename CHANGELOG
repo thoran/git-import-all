@@ -2,6 +2,13 @@
 
 ## 20140510
 
+0.0.5: Clear the repository entry by entry.
+
+1. ~ Removal: the repository directory itself replaced by each entry within it, so that the directory survives.
+2. ~ Copying: the revision directory replaced by each entry within it, so that its contents land in the repository rather than the revision directory itself.
+
+## 20140510
+
 0.0.4: Clear the repository before each revision is copied in.
 
 1. + FileUtils.rm_rf(repo_dir)
