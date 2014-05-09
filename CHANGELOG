@@ -2,6 +2,13 @@
 
 ## 20140510
 
+0.0.6: Commit and push for real.
+
+1. ~ Reinstated the commit, which had been left disabled while testing.
+2. + git push
+
+## 20140510
+
 0.0.5: Clear the repository entry by entry.
 
 1. ~ Removal: the repository directory itself replaced by each entry within it, so that the directory survives.
