@@ -2,7 +2,7 @@
 # git-importall
 
 # 20140510
-# 0.0.10
+# 0.0.11
 
 require 'Array/natural_sortX'
 require 'fileutils'
@@ -16,7 +16,7 @@ Dir.chdir(repo_dir)
 Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
   revision = File.expand_path(revision)
 
-  Dir["#{repo_dir}/**/*"].each do |filename|
+  Dir["#{repo_dir}/*"].each do |filename|
     puts "rm -rf #{filename}"
     FileUtils.rm_rf(filename)
   end

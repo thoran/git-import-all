@@ -2,6 +2,12 @@
 
 ## 20140510
 
+0.0.11: Clear only the repository's top level.
+
+1. ~ The removal glob: recursive descent replaced by the top level alone.
+
+## 20140510
+
 0.0.10: Remove directories as well as files.
 
 1. /FileUtils.rm_f()/FileUtils.rm_rf()/
