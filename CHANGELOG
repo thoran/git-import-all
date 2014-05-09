@@ -2,6 +2,13 @@
 
 ## 20140510
 
+0.0.7: Stage new files before committing.
+
+1. + git add .
+2. /git commit -a/git commit/
+
+## 20140510
+
 0.0.6: Commit and push for real.
 
 1. ~ Reinstated the commit, which had been left disabled while testing.
