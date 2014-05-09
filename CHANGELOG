@@ -2,6 +2,12 @@
 
 ## 20140510
 
+0.0.3: Correct the copy.
+
+1. /FileUtils.cp_pr()/FileUtils.cp_r()/, there being no cp_pr().
+
+## 20140510
+
 0.0.2: Echo commands and hold off committing while testing.
 
 1. /ARG/ARGV/
