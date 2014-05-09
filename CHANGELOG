@@ -2,6 +2,12 @@
 
 ## 20140510
 
+0.0.12: Shell out for removal.
+
+1. /FileUtils.rm_rf()/system "rm -rf"/
+
+## 20140510
+
 0.0.11: Clear only the repository's top level.
 
 1. ~ The removal glob: recursive descent replaced by the top level alone.
