@@ -2,6 +2,15 @@
 
 ## 20140510
 
+0.1.0: Issue a git-boot if the remote repository does not exist.
+
+1. + local_repository_exist?()
+2. + repo_remote?()
+3. + require 'Dir/self.exist?'
+4. + require 'ImpURI'
+
+## 20140510
+
 0.0.14: Stage deletions as well as additions.
 
 1. /git commit -a/git add -A . followed by git commit/, so that removals are staged.

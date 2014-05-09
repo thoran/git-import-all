@@ -2,28 +2,78 @@
 # git-importall
 
 # 20140510
-# 0.0.14
+# 0.1.0
+
+# Changes:
+# (Issue a git-boot if the remote repository does not exist)
+
+# Discussion:
+# 1. How is the situation of an existing local repository handled if the remote one does not exist?
+
+# Notes:
+# 1. For the time being this will use the same directory as is used by clone
 
 require 'Array/natural_sortX'
+require 'Dir/self.exist?'
 require 'fileutils'
+require 'ImpURI'
+
+# Retrieves GITHUB_REPOS_DIR---the preferred location of local github repositories.
+require File.expand_path('~/.config/clone_from_github/config.rb')
 
 revisions_root = File.expand_path(ARGV[0])
-repo_dir = File.expand_path(ARGV[1])
+repo = File.expand_path(ARGV[1]) || '.'
 
-puts "cd #{repo_dir}"
-Dir.chdir(repo_dir)
+def local_repository_exist?(repo)
+  Dir.chdir(repo) && Dir.exist?('.git')
+end
+
+def repo_remote?(repo)
+  ImpURI.parse(repo).hostname ? true : false
+end
+
+def remote_repository_exist?(repo)
+  system "git ls-remote #{repo}"
+end
+
+def repo_remote_and_exist?(repo)
+  repo_remote?(repo) && remote_repository_exist?(repo)
+end
+
+def repo_dir(repo)
+  @repo_dir ||= (
+    if local_repository_exist?(repo)
+      repo
+    else
+      full_github_repos_dir = File.expand_path(GITHUB_REPOS_DIR)
+      impuri = ImpURI.parse(repo)
+      username = impuri.path.split('/').first
+      repo_sans_extname = File.basename_without_extname(impuri.path)
+      File.join(full_github_repos_dir, username, repo_sans_extname)
+    end
+  )
+end
+
+unless local_repository_exist?(repo)
+  FileUtils.mkdir_p(repo_dir(repo)) unless Dir.exist?(repo_dir(repo))
+  puts "cd #{repo_dir(repo)}"
+  Dir.chdir(repo_dir(repo))
+  system "git-boot #{repo}"
+else
+  raise "I can't find a local repo and no remote repo was provided either."
+end
 
 Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
   revision = File.expand_path(revision)
 
-  Dir["#{repo_dir}/*"].each do |filename|
+  Dir["#{repo_dir(repo)}/*"].each do |filename|
     puts "rm -rf #{filename}"
     FileUtils.rm_rf(filename)
   end
 
   Dir["#{revision}/*"].each do |filename|
-    puts "cp -r #{filename} #{repo_dir}"
-    FileUtils.cp_r(filename, repo_dir)
+    puts "cp -r #{filename} #{repo_dir(repo)}"
+    FileUtils.cp_r(filename, repo_dir(repo))
   end
 
   puts 'git add -A .'
