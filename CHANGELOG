@@ -2,6 +2,13 @@
 
 ## 20140510
 
+0.0.13: Commit with a single command.
+
+1. /system "rm -rf"/FileUtils.rm_rf()/
+2. /git add . followed by git commit/git commit -a/
+
+## 20140510
+
 0.0.12: Shell out for removal.
 
 1. /FileUtils.rm_rf()/system "rm -rf"/
