@@ -2,6 +2,12 @@
 
 ## 20140510
 
+0.0.4: Clear the repository before each revision is copied in.
+
+1. + FileUtils.rm_rf(repo_dir)
+
+## 20140510
+
 0.0.3: Correct the copy.
 
 1. /FileUtils.cp_pr()/FileUtils.cp_r()/, there being no cp_pr().

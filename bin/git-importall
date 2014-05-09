@@ -2,7 +2,7 @@
 # git-importall
 
 # 20140510
-# 0.0.3
+# 0.0.4
 
 require 'Array/natural_sortX'
 require 'fileutils'
@@ -15,8 +15,11 @@ Dir.chdir(repo_dir)
 
 Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
   revision = File.expand_path(revision)
-  puts "cp -r #{revision} #{repo_dir}"
+  puts "cp -r #{revision}/* #{repo_dir}"
+
+  FileUtils.rm_rf(repo_dir)
   FileUtils.cp_r(revision, repo_dir)
+
   puts 'git commit -a'
   #system 'git commit -a'
 end
