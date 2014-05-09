@@ -2,6 +2,12 @@
 
 ## 20140510
 
+0.0.8: Supply a commit message, since git commit alone opens an editor.
+
+1. /git commit/git commit -m ""/
+
+## 20140510
+
 0.0.7: Stage new files before committing.
 
 1. + git add .
