@@ -1,28 +1,38 @@
 #!/usr/bin/env ruby
 # git-importall
 
-# 20140510
-# 0.1.0
+# 20140710
+# 0.1.1
 
 # Changes:
 # (Issue a git-boot if the remote repository does not exist)
+# 1. As per above.
+# 0/1
+# 2. + repo(), so that it now checks for the presence of ARGV[1] before attempting to use it, as well as being memoized.
+# 3. + revisions_root(), now memoized, though since only used once really there for consistency with ARGV[1].
+# 4. + main(), just 'cause it's neater is about all.
 
 # Discussion:
 # 1. How is the situation of an existing local repository handled if the remote one does not exist?
 
 # Notes:
-# 1. For the time being this will use the same directory as is used by clone
+# 1. For the time being this will use the same directory as is used by clone.
 
 require 'Array/natural_sortX'
-require 'Dir/self.exist?'
+require 'Dir/self.existQ'
 require 'fileutils'
 require 'ImpURI'
 
 # Retrieves GITHUB_REPOS_DIR---the preferred location of local github repositories.
 require File.expand_path('~/.config/clone_from_github/config.rb')
 
-revisions_root = File.expand_path(ARGV[0])
-repo = File.expand_path(ARGV[1]) || '.'
+def revisions_root
+  @revisions_root ||= File.expand_path(ARGV[0])
+end
+
+def repo
+  @repo ||= ARGV[1] ? File.expand_path(ARGV[1]) : '.'
+end
 
 def local_repository_exist?(repo)
   Dir.chdir(repo) && Dir.exist?('.git')
@@ -54,34 +64,38 @@ def repo_dir(repo)
   )
 end
 
-unless local_repository_exist?(repo)
-  FileUtils.mkdir_p(repo_dir(repo)) unless Dir.exist?(repo_dir(repo))
-  puts "cd #{repo_dir(repo)}"
-  Dir.chdir(repo_dir(repo))
-  system "git-boot #{repo}"
-else
-  raise "I can't find a local repo and no remote repo was provided either."
-end
-
-Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
-  revision = File.expand_path(revision)
-
-  Dir["#{repo_dir(repo)}/*"].each do |filename|
-    puts "rm -rf #{filename}"
-    FileUtils.rm_rf(filename)
+def main
+  unless local_repository_exist?(repo)
+    FileUtils.mkdir_p(repo_dir(repo)) unless Dir.exist?(repo_dir(repo))
+    puts "cd #{repo_dir(repo)}"
+    Dir.chdir(repo_dir(repo))
+    system "git-boot #{repo}"
+  else
+    raise "I can't find a local repo and no remote repo was provided either."
   end
 
-  Dir["#{revision}/*"].each do |filename|
-    puts "cp -r #{filename} #{repo_dir(repo)}"
-    FileUtils.cp_r(filename, repo_dir(repo))
+  Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
+    revision = File.expand_path(revision)
+
+    Dir["#{repo_dir(repo)}/*"].each do |filename|
+      puts "rm -rf #{filename}"
+      FileUtils.rm_rf(filename)
+    end
+
+    Dir["#{revision}/*"].each do |filename|
+      puts "cp -r #{filename} #{repo_dir(repo)}"
+      FileUtils.cp_r(filename, repo_dir(repo))
+    end
+
+    puts 'git add -A .'
+    system 'git add -A .'
+
+    puts 'git commit -m "Committed automatically by git-importall."'
+    system 'git commit -m "Committed automatically by git-importall."'
   end
 
-  puts 'git add -A .'
-  system 'git add -A .'
-
-  puts 'git commit -m "Committed automatically by git-importall."'
-  system 'git commit -m "Committed automatically by git-importall."'
+  puts 'git push'
+  system 'git push'
 end
 
-puts 'git push'
-system 'git push'
+main

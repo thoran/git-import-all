@@ -1,3 +1,18 @@
+# Array/natural_sortX.rb
+# Array#natural_sort!
+
+# 20140519
+# 0.1.0
+
+# Description: This will sort an array of strings 'naturally' in place.
+
+# Usage:
+# %w{1 2 10 11 12 20}.natural_sort!
+# => [1 2 10 11 12 20]
+# cf.
+# %w{1 2 10 11 12 20}.sort
+# => [1 10 11 12 2 20]
+
 require 'String/natural_comparison'
 
 class Array
@@ -9,16 +24,4 @@ class Array
   end
   alias_method :natsort!, :natural_sort!
   
-end
-
-if __FILE__ == $0
-  def success
-    print '.'
-  end
-
-  def failure
-    print'x'
-  end
-  
-  ['abc1', 'abc12', 'abc123', 'abc2', 'abc23', 'abc234'].natsort == ['abc1', 'abc2', 'abc12', 'abc23', 'abc123', 'abc234'] ? success : failure
 end
