@@ -2,7 +2,7 @@
 # git-importall
 
 # 20141220
-# 0.2.3
+# 0.2.4
 
 # Changes:
 # 0/1
@@ -13,6 +13,8 @@
 # 4. Removed any diagnostic output.
 # 2/3
 # 5. + require 'Kernel/run' and use thereof, replacing some FileUtils and Dir ruby class methods as well as some uses of puts() and system().
+# 3/4
+# 6. + Examples
 
 # Discussion:
 # 1. How is the situation of an existing local repository handled if the remote one does not exist?
@@ -24,6 +26,10 @@
 # 1. Accommodate for when there is a local repository, but none remotely, since that is a possibility.
 # 2. Make the output a bit more presentable.
 # 3. As per git-boot (to an extent) make this independent of Github and able to be used with other similar services as well as with generic git repo's.
+
+# Examples:
+# 1. git-importall ~/path/to/repo/ username:password@github.com/username/repo
+# 2. cd ~/path/to/repo; git-importall username:password@github.com/username/repo
 
 require 'Array/natural_sortX'
 require 'Dir/self.existQ'

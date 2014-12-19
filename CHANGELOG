@@ -2,6 +2,12 @@
 
 ## 20141220
 
+0.2.4: Document usage.
+
+1. + Examples
+
+## 20141220
+
 0.2.3: Route shell work through Kernel#run.
 
 1. + require 'Kernel/run' and use thereof, replacing some FileUtils and Dir class methods as well as some uses of puts() and system().
