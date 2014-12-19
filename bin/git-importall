@@ -1,16 +1,14 @@
 #!/usr/bin/env ruby
 # git-importall
 
-# 20140728
-# 0.2.0
+# 20141220
+# 0.2.1
 
 # Changes:
-# (Issue a git-boot if the remote repository does not exist)
-# 1. As per above.
 # 0/1
-# 2. + repo(), so that it now checks for the presence of ARGV[1] before attempting to use it, as well as being memoized.
-# 3. + revisions_root(), now memoized, though since only used once really there for consistency with ARGV[1].
-# 4. + main(), just 'cause it's neater is about all.
+# 1. ~ revisions_root(), so that it first checks for the existence of ARGV[0] and that it is a file and then assigns '.' if it is missing.
+# 2. ~ repo(), so that it first checks for the existence of ARGV[1] and then assigns ARGV[0] if it is missing.
+# 3. ~ local_repository_exist?(), since it was chdir'ing to the repo and the revisions root, which is otherwise the default pwd is being lost.
 
 # Discussion:
 # 1. How is the situation of an existing local repository handled if the remote one does not exist?
@@ -34,21 +32,30 @@ require 'octokit'
 require File.expand_path('~/.config/clone_from_github/config.rb')
 
 def revisions_root
-  @revisions_root ||= File.expand_path(ARGV[0])
+  @revisions_root ||= (
+    if ARGV[0] && File.exist?(ARGV[0])
+      File.expand_path(ARGV[0])
+    else
+      File.expand_path('.')
+    end
+  )
 end
 
 def repo
   @repo ||= (
-    if ImpURI.parse(ARGV[1]).hostname?
+    if ARGV[1] && ImpURI.parse(ARGV[1]).hostname?
       ARGV[1]
-    else
-      '.'
+    elsif ARGV[0] && ImpURI.parse(ARGV[0]).hostname?
+      ARGV[0]
     end
   )
 end
 
 def local_repository_exist?(repo)
-  Dir.exist?(repo) && Dir.chdir(repo) && Dir.exist?('.git')
+  current_dir = Dir.pwd
+  return_value = Dir.exist?(repo) && Dir.chdir(repo) && Dir.exist?('.git')
+  Dir.chdir(current_dir)
+  return_value
 end
 
 def repo_remote?(repo)
@@ -86,17 +93,15 @@ end
 
 def main
   p 'main()'
-  p remote_repository_exist?(repo)
+  p revisions_root
+
   if remote_repository_exist?(repo)
-    p local_repository_exist?(repo_dir(repo))
     unless local_repository_exist?(repo_dir(repo))
       impuri = ImpURI.new(repo)
       puts "git clone git@github.com:#{impuri.path}.git"
       system "git clone git@github.com:#{impuri.path}.git"
-      p Dir.pwd
     end
   else
-    p local_repository_exist?(repo_dir(repo))
     unless local_repository_exist?(repo_dir(repo))
       puts "mkdir -p #{repo_dir(repo)}"
       FileUtils.mkdir_p(repo_dir(repo))
@@ -111,8 +116,11 @@ def main
   p Dir.chdir(repo_dir(repo))
   p Dir.pwd
 
+  puts 'revisions_root'
+  p revisions_root
+
   Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
-    revision = File.expand_path(revision)
+    p revision = File.expand_path(revision)
 
     Dir["#{repo_dir(repo)}/*"].each do |filename|
       puts "rm -rf #{filename}"
