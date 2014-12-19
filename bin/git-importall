@@ -2,7 +2,7 @@
 # git-importall
 
 # 20141220
-# 0.2.2
+# 0.2.3
 
 # Changes:
 # 0/1
@@ -11,6 +11,8 @@
 # 3. ~ local_repository_exist?(), since it was chdir'ing to the repo and the revisions root, which is otherwise the default pwd is being lost.
 # 1/2
 # 4. Removed any diagnostic output.
+# 2/3
+# 5. + require 'Kernel/run' and use thereof, replacing some FileUtils and Dir ruby class methods as well as some uses of puts() and system().
 
 # Discussion:
 # 1. How is the situation of an existing local repository handled if the remote one does not exist?
@@ -27,6 +29,7 @@ require 'Array/natural_sortX'
 require 'Dir/self.existQ'
 require 'fileutils'
 require 'File/self.basename_without_extname'
+require 'Kernel/run'
 require 'ImpURI'
 require 'octokit'
 
@@ -97,40 +100,29 @@ def main
   if remote_repository_exist?(repo)
     unless local_repository_exist?(repo_dir(repo))
       impuri = ImpURI.new(repo)
-      puts "git clone git@github.com:#{impuri.path}.git"
-      system "git clone git@github.com:#{impuri.path}.git"
+      run "git clone git@github.com:#{impuri.path}.git", show: true
     end
   else
     unless local_repository_exist?(repo_dir(repo))
-      puts "mkdir -p #{repo_dir(repo)}"
-      FileUtils.mkdir_p(repo_dir(repo))
-      puts "cd #{repo_dir(repo)}"
-      Dir.chdir(repo_dir(repo))
-      system "git-boot #{repo}"      
+      run "mkdir -p #{repo_dir(repo)}", show: true
+      run "cd #{repo_dir(repo)}", show: true
+      run "git-boot #{repo}", show: true
     end
   end
+
   Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
     revision = File.expand_path(revision)
-
     Dir["#{repo_dir(repo)}/*"].each do |filename|
-      puts "rm -rf #{filename}"
-      FileUtils.rm_rf(filename)
+      run "rm -rf #{filename}", show: true
     end
-
     Dir["#{revision}/*"].each do |filename|
-      puts "cp -r #{filename} #{repo_dir(repo)}"
-      FileUtils.cp_r(filename, repo_dir(repo))
+      run "cp -r #{filename} #{repo_dir(repo)}", show: true
     end
-
-    puts 'git add -A .'
-    system 'git add -A .'
-
-    puts 'git commit -m "Committed automatically by git-importall."'
-    system 'git commit -m "Committed automatically by git-importall."'
+    run 'git add -A', show: true
+    run 'git commit -m "Committed automatically by git-importall."', show: true
   end
 
-  puts 'git push origin master'
-  system 'git push origin master'
+  run 'git push origin master', show: true
 end
 
 main
