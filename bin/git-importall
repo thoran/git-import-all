@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-importall
 
-# 20141220
-# 0.2.4
+# 20181106
+# 0.2.5
 
 # Changes:
 # 0/1
@@ -15,6 +15,8 @@
 # 5. + require 'Kernel/run' and use thereof, replacing some FileUtils and Dir ruby class methods as well as some uses of puts() and system().
 # 3/4
 # 6. + Examples
+# 4/5
+# 7. ~ Examples, so that we are left with something that actually works!
 
 # Discussion:
 # 1. How is the situation of an existing local repository handled if the remote one does not exist?
@@ -28,8 +30,7 @@
 # 3. As per git-boot (to an extent) make this independent of Github and able to be used with other similar services as well as with generic git repo's.
 
 # Examples:
-# 1. git-importall ~/path/to/repo/ username:password@github.com/username/repo
-# 2. cd ~/path/to/repo; git-importall username:password@github.com/username/repo
+# 1. cd ~/path/to/repo; git-importall ~/path/to/revisions/root/ username:password@github.com/username/repo
 
 require 'Array/natural_sortX'
 require 'Dir/self.existQ'

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 20181106
+
+0.2.5: Correct the examples.
+
+1. ~ Examples, so that we are left with something that actually works.
+
 ## 20141220
 
 0.2.4: Document usage.
