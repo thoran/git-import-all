@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 20200111
+
+0.3.0: Bundle the required libraries.
+
+1. + Gemfile
+2. + ./lib
+
 ## 20181106
 
 0.2.5: Correct the examples.

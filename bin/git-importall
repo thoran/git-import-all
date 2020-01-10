@@ -1,22 +1,13 @@
 #!/usr/bin/env ruby
 # git-importall
 
-# 20181106
-# 0.2.5
+# 20181106, 20200111
+# 0.3.0
 
 # Changes:
-# 0/1
-# 1. ~ revisions_root(), so that it first checks for the existence of ARGV[0] and that it is a file and then assigns '.' if it is missing.
-# 2. ~ repo(), so that it first checks for the existence of ARGV[1] and then assigns ARGV[0] if it is missing.
-# 3. ~ local_repository_exist?(), since it was chdir'ing to the repo and the revisions root, which is otherwise the default pwd is being lost.
-# 1/2
-# 4. Removed any diagnostic output.
-# 2/3
-# 5. + require 'Kernel/run' and use thereof, replacing some FileUtils and Dir ruby class methods as well as some uses of puts() and system().
-# 3/4
-# 6. + Examples
-# 4/5
-# 7. ~ Examples, so that we are left with something that actually works!
+# Making it easier to use by adding the required libraries and a Gemfile for those which are gems.
+# 1. + Gemfile
+# 2. + ./lib
 
 # Discussion:
 # 1. How is the situation of an existing local repository handled if the remote one does not exist?
@@ -36,8 +27,8 @@ require 'Array/natural_sortX'
 require 'Dir/self.existQ'
 require 'fileutils'
 require 'File/self.basename_without_extname'
-require 'Kernel/run'
 require 'ImpURI'
+require 'Kernel/run'
 require 'octokit'
 
 # Retrieves GITHUB_REPOS_DIR---the preferred location of local github repositories.
