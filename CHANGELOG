@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 20200208
+
+0.4.0: Make it work locally only, since we have git push for the other bit.
+
+1. + The impuri gem.
+2. + second_argument()
+3. /local_repository_exist?()/repository_exist?()/
+4. ~ main(): No longer attempts to push.
+5. ~ main(): Accepts the repo argument, making it a bit more functional while there are no explicit objects in here.
+6. - require 'octokit'
+7. - repo_remote?()
+8. - remote_repository_exist?()
+9. - repo_remote_and_exist?()
+
 ## 20200111
 
 0.3.0: Bundle the required libraries.

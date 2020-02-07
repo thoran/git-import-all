@@ -1,13 +1,19 @@
 #!/usr/bin/env ruby
 # git-importall
 
-# 20181106, 20200111
-# 0.3.0
+# 20200208
+# 0.4.0
 
-# Changes:
-# Making it easier to use by adding the required libraries and a Gemfile for those which are gems.
-# 1. + Gemfile
-# 2. + ./lib
+# Changes: (Making it work locally only, since we have git push for the other bit!)
+# 1. Added the impuri gem.
+# 2. - require 'octokit'
+# 3. + second_argument()
+# 4. - repo_remote?()
+# 5. - remote_repository_exist?()
+# 6. - repo_remote_and_exist?()
+# 7. /local_repository_exist?()/repository_exist?()/
+# 8. ~ main(), so that it no longer attempts to push.
+# 9. ~ main(), so that it accepts the repo argument, thereby making a bit more functional, while I don't have explicit objects in here.
 
 # Discussion:
 # 1. How is the situation of an existing local repository handled if the remote one does not exist?
@@ -16,12 +22,13 @@
 # 1. For the time being this will use the same directory as is used by clone.
 
 # Todo:
-# 1. Accommodate for when there is a local repository, but none remotely, since that is a possibility.
+# 1. Accommodate for when there is a local repository, but none remotely, since that is a possibility. (Done as of 0.4.0; essentially by removing any reference to a remote repository at all.)
 # 2. Make the output a bit more presentable.
-# 3. As per git-boot (to an extent) make this independent of Github and able to be used with other similar services as well as with generic git repo's.
+# 3. As per git-boot (to an extent) make this independent of Github and able to be used with other similar services as well as with generic git repo's.  (Done as of 0.4.0 as per Todo #1.)
 
 # Examples:
-# 1. cd ~/path/to/repo; git-importall ~/path/to/revisions/root/ username:password@github.com/username/repo
+# 1. cd ~/path/to/repo; git-importall ~/path/to/revisions/root/
+# 2. git-importall ~/path/to/repo ~/path/to/revisions/root/
 
 require 'Array/natural_sortX'
 require 'Dir/self.existQ'
@@ -29,83 +36,55 @@ require 'fileutils'
 require 'File/self.basename_without_extname'
 require 'ImpURI'
 require 'Kernel/run'
-require 'octokit'
 
-# Retrieves GITHUB_REPOS_DIR---the preferred location of local github repositories.
-require File.expand_path('~/.config/clone_from_github/config.rb')
+def second_argument?
+  !ARGV[1].nil?
+end
 
 def revisions_root
   @revisions_root ||= (
-    if ARGV[0] && File.exist?(ARGV[0])
+    if second_argument?
+      if ARGV[1] && File.exist?(ARGV[1])
+        File.expand_path(ARGV[1])
+      end
+    elsif ARGV[0] && File.exist?(ARGV[0])
       File.expand_path(ARGV[0])
-    else
-      File.expand_path('.')
     end
   )
 end
 
 def repo
   @repo ||= (
-    if ARGV[1] && ImpURI.parse(ARGV[1]).hostname?
-      ARGV[1]
-    elsif ARGV[0] && ImpURI.parse(ARGV[0]).hostname?
-      ARGV[0]
+    if second_argument?
+      if ARGV[0] && File.exist?(ARGV[0])
+        File.expand_path(ARGV[0])
+      end
+    else
+      File.expand_path('.')
     end
   )
 end
 
-def local_repository_exist?(repo)
+def repository_exist?(repo)
   current_dir = Dir.pwd
   return_value = Dir.exist?(repo) && Dir.chdir(repo) && Dir.exist?('.git')
   Dir.chdir(current_dir)
   return_value
 end
 
-def repo_remote?(repo)
-  ImpURI.parse(repo).hostname?
-end
-
-def remote_repository_exist?(repo)
-  if repo_remote?(repo)
-    impuri = ImpURI.new(repo)
-    octokit_client = Octokit::Client.new(login: impuri.username, password: impuri.password)
-    repo = octokit_client.repos.detect{|repo| impuri.path =~ Regexp.new(Regexp.quote(repo[:full_name]))}
-    repo ? true : false
-  else
-    Dir.exist?('.git') && system('git ls-remote') && $?.success?
-  end
-end
-
-def repo_remote_and_exist?(repo)
-  repo_remote?(repo) && remote_repository_exist?(repo)
-end
-
 def repo_dir(repo)
   @repo_dir ||= (
-    if local_repository_exist?(repo)
+    if repository_exist?(repo)
       repo
-    else
-      full_github_repos_dir = File.expand_path(GITHUB_REPOS_DIR)
-      impuri = ImpURI.parse(repo)
-      username = impuri.username
-      repo_sans_extname = File.basename_without_extname(impuri.path)
-      File.join(full_github_repos_dir, username, repo_sans_extname)
     end
   )
 end
 
-def main
-  if remote_repository_exist?(repo)
-    unless local_repository_exist?(repo_dir(repo))
-      impuri = ImpURI.new(repo)
-      run "git clone git@github.com:#{impuri.path}.git", show: true
-    end
-  else
-    unless local_repository_exist?(repo_dir(repo))
-      run "mkdir -p #{repo_dir(repo)}", show: true
-      run "cd #{repo_dir(repo)}", show: true
-      run "git-boot #{repo}", show: true
-    end
+def main(repo)
+  unless repository_exist?(repo_dir(repo))
+    run "mkdir -p #{repo_dir(repo)}", show: true
+    run "cd #{repo_dir(repo)}", show: true
+    run "git-boot #{repo}", show: true
   end
 
   Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
@@ -119,8 +98,6 @@ def main
     run 'git add -A', show: true
     run 'git commit -m "Committed automatically by git-importall."', show: true
   end
-
-  run 'git push origin master', show: true
 end
 
-main
+main(repo)
