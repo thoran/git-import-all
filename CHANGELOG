@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 20260320
+
+0.5.0: Rename from git-importall; CHANGELOG-aware commit messages.
+
+1. /git-importall/git-import-all/
+2. + read_changelog()
+3. + parse_latest_entry()
+4. + commit_message()
+5. ~ main(): Use commit_message() instead of a generic message.
+6. - require 'File/self.basename_without_extname': Unused since 0.4.0, when automatic pushing to a remote was removed.
+
 ## 20200208
 
 0.4.0: Make it work locally only, since we have git push for the other bit.

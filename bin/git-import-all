@@ -1,25 +1,21 @@
 #!/usr/bin/env ruby
-# git-importall
+# git-import-all
 
-# 20200208
-# 0.4.0
+# 20260320
+# 0.5.0
 
-# Changes: (Making it work locally only, since we have git push for the other bit!)
-# 1. Added the impuri gem.
-# 2. - require 'octokit'
-# 3. + second_argument()
-# 4. - repo_remote?()
-# 5. - remote_repository_exist?()
-# 6. - repo_remote_and_exist?()
-# 7. /local_repository_exist?()/repository_exist?()/
-# 8. ~ main(), so that it no longer attempts to push.
-# 9. ~ main(), so that it accepts the repo argument, thereby making a bit more functional, while I don't have explicit objects in here.
-
-# Discussion:
-# 1. How is the situation of an existing local repository handled if the remote one does not exist?
+# Changes since 0.4:
+# -/0: Rename from git-importall; CHANGELOG-aware commit messages.
+# 1. /git-importall/git-import-all/
+# 2. + read_changelog()
+# 3. + parse_latest_entry()
+# 4. + commit_message()
+# 5. ~ main(): Use commit_message() instead of generic message.
+# 6. - require 'File/self.basename_without_extname': Unused since 0.4.0 when automatic pushing to a remote was removed.
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
+# 2. Optionally run changelogger on the revisions root before running this script.
 
 # Todo:
 # 1. Accommodate for when there is a local repository, but none remotely, since that is a possibility. (Done as of 0.4.0; essentially by removing any reference to a remote repository at all.)
@@ -27,14 +23,13 @@
 # 3. As per git-boot (to an extent) make this independent of Github and able to be used with other similar services as well as with generic git repo's.  (Done as of 0.4.0 as per Todo #1.)
 
 # Examples:
-# 1. cd ~/path/to/repo; git-importall ~/path/to/revisions/root/
-# 2. git-importall ~/path/to/repo ~/path/to/revisions/root/
+# 1. cd ~/path/to/repo; git-import-all ~/path/to/revisions/root/
+# 2. git-import-all ~/path/to/repo ~/path/to/revisions/root/
 
 require 'Array/natural_sortX'
 require 'Dir/self.existQ'
 require 'fileutils'
-require 'File/self.basename_without_extname'
-require 'ImpURI'
+require 'impuri'
 require 'Kernel/run'
 
 def second_argument?
@@ -80,13 +75,55 @@ def repo_dir(repo)
   )
 end
 
+def read_changelog(revision)
+  changelog_path = File.join(revision, 'CHANGELOG')
+  return nil unless File.exist?(changelog_path)
+  File.read(changelog_path)
+end
+
+def parse_latest_entry(changelog_text)
+  return nil unless changelog_text
+  entries = changelog_text.split(/(?=\d+\.\d+\.\d+\s+-\s+\d{8})/)
+  entries.reject!{|e| e.strip.empty? || e.strip == '# CHANGELOG'}
+  entry = entries.first
+  return nil unless entry
+  version = nil
+  summary = nil
+  items = []
+  entry.each_line do |line|
+    line = line.strip
+    if line =~ /\A(\d+\.\d+\.\d+)\s+-\s+\d{8}/
+      version = $1
+    elsif line =~ /\A\d+\.\s+(.*)/
+      items << $1.strip
+    elsif line =~ /\A#/
+      next
+    elsif !line.empty? && summary.nil?
+      summary = line
+    end
+  end
+  summary ||= items.first
+  version ||= 'unknown'
+  summary ||= 'No summary'
+  {version: version, summary: summary}
+end
+
+def commit_message(revision)
+  changelog_text = read_changelog(revision)
+  entry = parse_latest_entry(changelog_text)
+  if entry
+    "#{entry[:version]}: #{entry[:summary]}"
+  else
+    "Committed automatically by git-import-all."
+  end
+end
+
 def main(repo)
   unless repository_exist?(repo_dir(repo))
     run "mkdir -p #{repo_dir(repo)}", show: true
     run "cd #{repo_dir(repo)}", show: true
     run "git-boot #{repo}", show: true
   end
-
   Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
     revision = File.expand_path(revision)
     Dir["#{repo_dir(repo)}/*"].each do |filename|
@@ -95,8 +132,9 @@ def main(repo)
     Dir["#{revision}/*"].each do |filename|
       run "cp -r #{filename} #{repo_dir(repo)}", show: true
     end
+    message = commit_message(revision)
     run 'git add -A', show: true
-    run 'git commit -m "Committed automatically by git-importall."', show: true
+    run "git commit -m \"#{message}\"", show: true
   end
 end
 
