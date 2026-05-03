@@ -1,17 +1,15 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20260320
-# 0.5.0
+# 20260504
+# 0.6.0
 
-# Changes since 0.4:
-# -/0: Rename from git-importall; CHANGELOG-aware commit messages.
-# 1. /git-importall/git-import-all/
-# 2. + read_changelog()
-# 3. + parse_latest_entry()
-# 4. + commit_message()
-# 5. ~ main(): Use commit_message() instead of generic message.
-# 6. - require 'File/self.basename_without_extname': Unused since 0.4.0 when automatic pushing to a remote was removed.
+# Changes since 0.5:
+# -/0:
+# 1. ~ read_changelog(): Find CHANGELOG or CHANGELOG.md from the highest numbered directory globally.
+# 2. /parse_latest_entry/parse_entries/: Return all entries indexed oldest-first.
+# 3. ~ commit_message(): Match revision index to corresponding CHANGELOG entry.
+# 4. ~ main(): Parse entries once, pass index to commit_message().
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -75,44 +73,57 @@ def repo_dir(repo)
   )
 end
 
-def read_changelog(revision)
-  changelog_path = File.join(revision, 'CHANGELOG')
-  return nil unless File.exist?(changelog_path)
-  File.read(changelog_path)
-end
-
-def parse_latest_entry(changelog_text)
-  return nil unless changelog_text
-  entries = changelog_text.split(/(?=\d+\.\d+\.\d+\s+-\s+\d{8})/)
-  entries.reject!{|e| e.strip.empty? || e.strip == '# CHANGELOG'}
-  entry = entries.first
-  return nil unless entry
-  version = nil
-  summary = nil
-  items = []
-  entry.each_line do |line|
-    line = line.strip
-    if line =~ /\A(\d+\.\d+\.\d+)\s+-\s+\d{8}/
-      version = $1
-    elsif line =~ /\A\d+\.\s+(.*)/
-      items << $1.strip
-    elsif line =~ /\A#/
-      next
-    elsif !line.empty? && summary.nil?
-      summary = line
+def read_changelog(sorted_revisions)
+  sorted_revisions.reverse_each do |candidate|
+    ['CHANGELOG.md', 'CHANGELOG'].each do |filename|
+      changelog_path = File.join(candidate, filename)
+      return File.read(changelog_path) if File.exist?(changelog_path)
     end
   end
-  summary ||= items.first
-  version ||= 'unknown'
-  summary ||= 'No summary'
-  {version: version, summary: summary}
+  nil
 end
 
-def commit_message(revision)
-  changelog_text = read_changelog(revision)
-  entry = parse_latest_entry(changelog_text)
+def parse_entries(changelog_text)
+  return [] unless changelog_text
+  raw_entries = changelog_text.split(/(?=(?:##\s+\[?\d|\d+\.\d+\.\d+\s+-\s+\d{8}))/)
+  raw_entries.reject!{|e| e.strip.empty? || e.strip == '# CHANGELOG'}
+  raw_entries.reverse.map do |entry|
+    version = nil
+    date = nil
+    summary = nil
+    items = []
+    entry.each_line do |line|
+      line = line.strip
+      if line =~ /\A(?:##\s+)?\[?(\d+\.\d+\.\d+)\]?\s+-\s+(\d{8})/
+        version = $1
+        date = $2
+      elsif line =~ /\A##\s+(\d{8})/
+        date = $1
+      elsif line =~ /\A##\s+(.*)/
+        summary = $1.strip
+      elsif line =~ /\A\d+\.\s+(.*)/
+        items << $1.strip
+      elsif line =~ /\A#/
+        next
+      elsif !line.empty? && summary.nil?
+        summary = line
+      end
+    end
+    summary ||= items.first
+    summary ||= 'No summary'
+    {version: version, date: date, summary: summary}
+  end
+end
+
+def commit_message(revision_index, entries)
+  entry = entries[revision_index]
   if entry
-    "#{entry[:version]}: #{entry[:summary]}"
+    prefix = entry[:version] || entry[:date]
+    if prefix
+      "#{prefix}: #{entry[:summary]}"
+    else
+      entry[:summary]
+    end
   else
     "Committed automatically by git-import-all."
   end
@@ -124,15 +135,17 @@ def main(repo)
     run "cd #{repo_dir(repo)}", show: true
     run "git-boot #{repo}", show: true
   end
-  Dir["#{revisions_root}/*"].natural_sort!.each do |revision|
-    revision = File.expand_path(revision)
+  sorted_revisions = Dir["#{revisions_root}/*"].natural_sort!.map{|r| File.expand_path(r)}
+  changelog_text = read_changelog(sorted_revisions)
+  entries = parse_entries(changelog_text)
+  sorted_revisions.each_with_index do |revision, index|
     Dir["#{repo_dir(repo)}/*"].each do |filename|
       run "rm -rf #{filename}", show: true
     end
     Dir["#{revision}/*"].each do |filename|
       run "cp -r #{filename} #{repo_dir(repo)}", show: true
     end
-    message = commit_message(revision)
+    message = commit_message(index, entries)
     run 'git add -A', show: true
     run "git commit -m \"#{message}\"", show: true
   end

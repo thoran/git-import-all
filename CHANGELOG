@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 20260504
+
+0.6.0: Match each revision to its own CHANGELOG entry.
+
+1. ~ read_changelog(): Find CHANGELOG or CHANGELOG.md from the highest numbered directory globally.
+2. /parse_latest_entry/parse_entries/: Return all entries indexed oldest-first.
+3. ~ commit_message(): Match revision index to corresponding CHANGELOG entry.
+4. ~ main(): Parse entries once, pass index to commit_message().
+
 ## 20260320
 
 0.5.0: Rename from git-importall; CHANGELOG-aware commit messages.
