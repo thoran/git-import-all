@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 20260731
+
+0.7.0: Read a version and a date out of any of the CHANGELOG heading styles in use.
+
+1. + heading_summary(): Strip the version and date out of a heading, leaving the summary.
+2. ~ parse_entries(): Scan the ## heading for a version and a date independently, rather than matching one rigid form. Assignment is with ||=, so a later ## line within an entry cannot overwrite values already found.
+
 ## 20260504
 
 0.6.0: Match each revision to its own CHANGELOG entry.

@@ -1,15 +1,13 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20260504
-# 0.6.0
+# 20260731
+# 0.7.0
 
-# Changes since 0.5:
+# Changes since 0.6:
 # -/0:
-# 1. ~ read_changelog(): Find CHANGELOG or CHANGELOG.md from the highest numbered directory globally.
-# 2. /parse_latest_entry/parse_entries/: Return all entries indexed oldest-first.
-# 3. ~ commit_message(): Match revision index to corresponding CHANGELOG entry.
-# 4. ~ main(): Parse entries once, pass index to commit_message().
+# 1. + heading_summary(): Strip the version and date out of a heading, leaving the summary.
+# 2. ~ parse_entries(): Scan the ## heading for a version and a date independently, rather than matching one rigid form, so that all of the CHANGELOG styles in use are read. Values are assigned with ||=, so a later ## line within an entry cannot overwrite them.
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -83,6 +81,14 @@ def read_changelog(sorted_revisions)
   nil
 end
 
+def heading_summary(heading, version, date)
+  result = heading.dup
+  result.sub!(/\[?v?#{Regexp.escape(version)}\]?/, '') if version
+  result.sub!(/\(?#{Regexp.escape(date)}\)?/, '') if date
+  result.sub!(/\A[\s\-—\/(),:]+/, '')
+  result.strip.empty? ? nil : result.strip
+end
+
 def parse_entries(changelog_text)
   return [] unless changelog_text
   raw_entries = changelog_text.split(/(?=(?:##\s+\[?\d|\d+\.\d+\.\d+\s+-\s+\d{8}))/)
@@ -94,13 +100,11 @@ def parse_entries(changelog_text)
     items = []
     entry.each_line do |line|
       line = line.strip
-      if line =~ /\A(?:##\s+)?\[?(\d+\.\d+\.\d+)\]?\s+-\s+(\d{8})/
-        version = $1
-        date = $2
-      elsif line =~ /\A##\s+(\d{8})/
-        date = $1
-      elsif line =~ /\A##\s+(.*)/
-        summary = $1.strip
+      if line =~ /\A##\s+(.*)/
+        heading = $1.strip
+        version ||= heading[/\[?v?(\d+(?:\.\d+)+)\]?/, 1]
+        date ||= heading[/(\d{4}-?\d{2}-?\d{2})/, 1]
+        summary ||= heading_summary(heading, version, date)
       elsif line =~ /\A\d+\.\s+(.*)/
         items << $1.strip
       elsif line =~ /\A#/
