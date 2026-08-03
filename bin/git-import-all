@@ -1,13 +1,20 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20260731
-# 0.7.0
+# 20260804
+# 0.8.0
 
-# Changes since 0.6:
+# Changes since 0.7:
 # -/0:
-# 1. + heading_summary(): Strip the version and date out of a heading, leaving the summary.
-# 2. ~ parse_entries(): Scan the ## heading for a version and a date independently, rather than matching one rigid form, so that all of the CHANGELOG styles in use are read. Values are assigned with ||=, so a later ## line within an entry cannot overwrite them.
+# 1. + module Changelog, with Changelog.parse() replacing parse_entries(). Inlined for now; to be
+#    extracted to a library once the format set is complete, so that changelogger can share it.
+# 2. + Changelog::Format::DatedHeading: "## 20260726" with the version and summary on the body
+#    line, which is the style most of the repositories use.
+# 3. + Changelog::Format::VersionedHeading: the version in the ## heading, covering the
+#    parenthesised, bracketed and em dashed variants.
+# 4. + Changelog::Format.for(): Dispatch per entry, requiring exactly one format to match. Nothing
+#    matching, or more than one matching, raises rather than silently yielding a wrong message.
+# 5. - heading_summary(), parse_entries().
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -27,6 +34,143 @@ require 'Dir/self.existQ'
 require 'fileutils'
 require 'impuri'
 require 'Kernel/run'
+
+module Changelog
+  ITEM = /\A\d+\.\s+(.*)\z/
+  VERSION = /\[?v?(\d+(?:\.\d+)+)\]?/
+  DATE = /(\d{4}-?\d{2}-?\d{2})/
+
+  module Format
+    module Common
+      def heading(text)
+        text.lines.first.to_s.strip
+      end
+
+      def body_lines(text)
+        text.lines.drop(1).map(&:strip)
+      end
+
+      def items(text)
+        body_lines(text).map{|line| line[Changelog::ITEM, 1]}.compact
+      end
+
+      def entry(version, date, summary, text)
+        {version: version, date: date, summary: summary || items(text).first || 'No summary'}
+      end
+    end
+
+    module DatedHeading
+      extend Common
+
+      BOUNDARY = /^##\s+\d{8}\s*$/
+      HEADING = /\A##\s+(\d{8})\s*\z/
+      VERSIONED_SUMMARY = /\A(\d+(?:\.\d+)+):\s*(.*)\z/
+
+      class << self
+        def key
+          :dated_heading
+        end
+
+        def matches?(text)
+          !(heading(text) =~ HEADING).nil?
+        end
+
+        def parse(text)
+          version = nil
+          summary = nil
+          body_lines(text).each do |line|
+            next if line.empty? || line =~ Changelog::ITEM || line.start_with?('#')
+            if line =~ VERSIONED_SUMMARY
+              version = $1
+              summary = $2.strip
+            else
+              summary = line
+            end
+            break
+          end
+          entry(version, heading(text)[HEADING, 1], summary, text)
+        end
+      end
+    end
+
+    module VersionedHeading
+      extend Common
+
+      BOUNDARY = /^##\s+\[?v?\d+(?:\.\d+)+/
+
+      class << self
+        def key
+          :versioned_heading
+        end
+
+        def matches?(text)
+          line = heading(text)
+          line.start_with?('##') && !line[Changelog::VERSION, 1].nil?
+        end
+
+        def parse(text)
+          line = heading(text).sub(/\A##\s+/, '')
+          version = line[Changelog::VERSION, 1]
+          date = line[Changelog::DATE, 1]
+          entry(version, date, summary(line, version, date) || trailing_summary(text), text)
+        end
+
+        private
+
+        def summary(line, version, date)
+          result = line.dup
+          result.sub!(/\[?v?#{Regexp.escape(version)}\]?/, '') if version
+          result.sub!(/\(?#{Regexp.escape(date)}\)?/, '') if date
+          result.sub!(/\A[\s\-—\/(),:]+/, '')
+          result.strip.empty? ? nil : result.strip
+        end
+
+        def trailing_summary(text)
+          line = body_lines(text).detect{|candidate| !candidate.empty? && !(candidate =~ Changelog::ITEM)}
+          line ? line.sub(/\A#+\s*/, '').strip[/.+/] : nil
+        end
+      end
+    end
+
+    class << self
+      def all
+        [DatedHeading, VersionedHeading]
+      end
+
+      def boundary
+        @boundary ||= Regexp.new("(?=#{all.map{|format| format::BOUNDARY.source}.join('|')})")
+      end
+
+      def for(text)
+        matched = all.select{|format| format.matches?(text)}
+        line = text.lines.first.to_s.strip
+        raise "No CHANGELOG format matches: #{line}" if matched.empty?
+        raise "Ambiguous CHANGELOG format (#{matched.map(&:key).join(', ')}): #{line}" if matched.length > 1
+        matched.first
+      end
+    end
+  end
+
+  class << self
+    def parse(text)
+      return [] unless text
+      chunks(text).reverse.map{|chunk| Format.for(chunk).parse(chunk)}
+    end
+
+    private
+
+    def chunks(text)
+      result = text.split(Format.boundary).reject{|chunk| chunk.strip.empty?}
+      result.shift unless result.empty? || matched?(result.first)
+      raise 'No CHANGELOG entries recognised.' if result.empty?
+      result
+    end
+
+    def matched?(chunk)
+      Format.all.any?{|format| format.matches?(chunk)}
+    end
+  end
+end
 
 def second_argument?
   !ARGV[1].nil?
@@ -81,44 +225,6 @@ def read_changelog(sorted_revisions)
   nil
 end
 
-def heading_summary(heading, version, date)
-  result = heading.dup
-  result.sub!(/\[?v?#{Regexp.escape(version)}\]?/, '') if version
-  result.sub!(/\(?#{Regexp.escape(date)}\)?/, '') if date
-  result.sub!(/\A[\s\-—\/(),:]+/, '')
-  result.strip.empty? ? nil : result.strip
-end
-
-def parse_entries(changelog_text)
-  return [] unless changelog_text
-  raw_entries = changelog_text.split(/(?=(?:##\s+\[?\d|\d+\.\d+\.\d+\s+-\s+\d{8}))/)
-  raw_entries.reject!{|e| e.strip.empty? || e.strip == '# CHANGELOG'}
-  raw_entries.reverse.map do |entry|
-    version = nil
-    date = nil
-    summary = nil
-    items = []
-    entry.each_line do |line|
-      line = line.strip
-      if line =~ /\A##\s+(.*)/
-        heading = $1.strip
-        version ||= heading[/\[?v?(\d+(?:\.\d+)+)\]?/, 1]
-        date ||= heading[/(\d{4}-?\d{2}-?\d{2})/, 1]
-        summary ||= heading_summary(heading, version, date)
-      elsif line =~ /\A\d+\.\s+(.*)/
-        items << $1.strip
-      elsif line =~ /\A#/
-        next
-      elsif !line.empty? && summary.nil?
-        summary = line
-      end
-    end
-    summary ||= items.first
-    summary ||= 'No summary'
-    {version: version, date: date, summary: summary}
-  end
-end
-
 def commit_message(revision_index, entries)
   entry = entries[revision_index]
   if entry
@@ -141,7 +247,7 @@ def main(repo)
   end
   sorted_revisions = Dir["#{revisions_root}/*"].natural_sort!.map{|r| File.expand_path(r)}
   changelog_text = read_changelog(sorted_revisions)
-  entries = parse_entries(changelog_text)
+  entries = Changelog.parse(changelog_text)
   sorted_revisions.each_with_index do |revision, index|
     Dir["#{repo_dir(repo)}/*"].each do |filename|
       run "rm -rf #{filename}", show: true

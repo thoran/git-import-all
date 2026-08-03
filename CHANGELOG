@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 20260804
+
+0.8.0: Dispatch each CHANGELOG entry to a named format, and fail rather than guess.
+
+1. + module Changelog, with Changelog.parse() replacing parse_entries(). Inlined for now; to be extracted to a library once the format set is complete, so that changelogger can share it.
+2. + Changelog::Format::DatedHeading: "## 20260726" with the version and summary on the body line, which is the style most of the repositories use.
+3. + Changelog::Format::VersionedHeading: the version in the ## heading, covering the parenthesised, bracketed and em dashed variants.
+4. + Changelog::Format.for(): Dispatch per entry, requiring exactly one format to match. Nothing matching, or more than one matching, raises rather than silently yielding a wrong message.
+5. - heading_summary(), parse_entries().
+
 ## 20260731
 
 0.7.0: Read a version and a date out of any of the CHANGELOG heading styles in use.
