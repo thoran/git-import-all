@@ -2,19 +2,15 @@
 # git-import-all
 
 # 20260804
-# 0.8.0
+# 0.9.0
 
-# Changes since 0.7:
+# Changes since 0.8:
 # -/0:
-# 1. + module Changelog, with Changelog.parse() replacing parse_entries(). Inlined for now; to be
-#    extracted to a library once the format set is complete, so that changelogger can share it.
-# 2. + Changelog::Format::DatedHeading: "## 20260726" with the version and summary on the body
-#    line, which is the style most of the repositories use.
-# 3. + Changelog::Format::VersionedHeading: the version in the ## heading, covering the
-#    parenthesised, bracketed and em dashed variants.
-# 4. + Changelog::Format.for(): Dispatch per entry, requiring exactly one format to match. Nothing
-#    matching, or more than one matching, raises rather than silently yielding a wrong message.
-# 5. - heading_summary(), parse_entries().
+# 1. + commit_date(): The CHANGELOG entry's date, normalised to ISO.
+# 2. + commit_environment(): GIT_AUTHOR_DATE and GIT_COMMITTER_DATE for the commit, empty when the
+#    entry carries no date.
+# 3. ~ main(): Commit with the entry's date rather than the date of the import.
+# 4. + require 'date'
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -30,6 +26,7 @@
 # 2. git-import-all ~/path/to/repo ~/path/to/revisions/root/
 
 require 'Array/natural_sortX'
+require 'date'
 require 'Dir/self.existQ'
 require 'fileutils'
 require 'impuri'
@@ -239,6 +236,19 @@ def commit_message(revision_index, entries)
   end
 end
 
+def commit_date(revision_index, entries)
+  entry = entries[revision_index]
+  return nil unless entry && entry[:date]
+  date = Date.parse(entry[:date]) rescue nil
+  date&.strftime('%Y-%m-%d')
+end
+
+def commit_environment(revision_index, entries)
+  date = commit_date(revision_index, entries)
+  return '' unless date
+  "GIT_AUTHOR_DATE=#{date} GIT_COMMITTER_DATE=#{date} "
+end
+
 def main(repo)
   unless repository_exist?(repo_dir(repo))
     run "mkdir -p #{repo_dir(repo)}", show: true
@@ -257,7 +267,7 @@ def main(repo)
     end
     message = commit_message(index, entries)
     run 'git add -A', show: true
-    run "git commit -m \"#{message}\"", show: true
+    run "#{commit_environment(index, entries)}git commit -m \"#{message}\"", show: true
   end
 end
 

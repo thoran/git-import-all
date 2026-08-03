@@ -2,6 +2,15 @@
 
 ## 20260804
 
+0.9.0: Commit with the date the CHANGELOG entry carries, rather than the date of the import.
+
+1. + commit_date(): The CHANGELOG entry's date, normalised to ISO.
+2. + commit_environment(): GIT_AUTHOR_DATE and GIT_COMMITTER_DATE for the commit, empty when the entry carries no date.
+3. ~ main(): Commit with the entry's date.
+4. + require 'date'
+
+## 20260804
+
 0.8.0: Dispatch each CHANGELOG entry to a named format, and fail rather than guess.
 
 1. + module Changelog, with Changelog.parse() replacing parse_entries(). Inlined for now; to be extracted to a library once the format set is complete, so that changelogger can share it.
