@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 20260805
+
+0.10.0: Refuse to import when the entry count and the revision count disagree.
+
+1. + check_entry_count!(): Messages are matched by index, so a missing or extra entry silently shifts every message below it onto the wrong revision. Nothing else detects this, since each entry is individually well formed; there is simply one too few or too many.
+2. ~ main(): Check before committing anything.
+
 ## 20260804
 
 0.9.0: Commit with the date the CHANGELOG entry carries, rather than the date of the import.

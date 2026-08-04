@@ -1,16 +1,16 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20260804
-# 0.9.0
+# 20260805
+# 0.10.0
 
-# Changes since 0.8:
+# Changes since 0.9:
 # -/0:
-# 1. + commit_date(): The CHANGELOG entry's date, normalised to ISO.
-# 2. + commit_environment(): GIT_AUTHOR_DATE and GIT_COMMITTER_DATE for the commit, empty when the
-#    entry carries no date.
-# 3. ~ main(): Commit with the entry's date rather than the date of the import.
-# 4. + require 'date'
+# 1. + check_entry_count!(): Refuse to import when the number of CHANGELOG entries and the number
+#    of revisions disagree. Messages are matched by index, so a missing or extra entry silently
+#    shifts every message below it onto the wrong revision. Nothing else detects this, since each
+#    entry is individually well formed; there is simply one too few or too many.
+# 2. ~ main(): Check before committing anything.
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -249,6 +249,12 @@ def commit_environment(revision_index, entries)
   "GIT_AUTHOR_DATE=#{date} GIT_COMMITTER_DATE=#{date} "
 end
 
+def check_entry_count!(sorted_revisions, entries)
+  return if entries.length == sorted_revisions.length
+  raise "#{entries.length} CHANGELOG entries for #{sorted_revisions.length} revisions: " \
+    'each revision takes its message from the entry at the same index, so the two must agree.'
+end
+
 def main(repo)
   unless repository_exist?(repo_dir(repo))
     run "mkdir -p #{repo_dir(repo)}", show: true
@@ -258,6 +264,7 @@ def main(repo)
   sorted_revisions = Dir["#{revisions_root}/*"].natural_sort!.map{|r| File.expand_path(r)}
   changelog_text = read_changelog(sorted_revisions)
   entries = Changelog.parse(changelog_text)
+  check_entry_count!(sorted_revisions, entries)
   sorted_revisions.each_with_index do |revision, index|
     Dir["#{repo_dir(repo)}/*"].each do |filename|
       run "rm -rf #{filename}", show: true
