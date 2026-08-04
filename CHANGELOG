@@ -2,6 +2,12 @@
 
 ## 20260805
 
+0.10.1: Emit a commit date git will accept.
+
+1. ~ commit_date(): Emit a time and a UTC offset, not just a date. git rejects a bare "2014-05-08" in GIT_AUTHOR_DATE with "fatal: invalid date format", so every commit failed. The T form is used rather than the spaced one so that no shell quoting is needed.
+
+## 20260805
+
 0.10.0: Refuse to import when the entry count and the revision count disagree.
 
 1. + check_entry_count!(): Messages are matched by index, so a missing or extra entry silently shifts every message below it onto the wrong revision. Nothing else detects this, since each entry is individually well formed; there is simply one too few or too many.

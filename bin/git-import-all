@@ -2,15 +2,13 @@
 # git-import-all
 
 # 20260805
-# 0.10.0
+# 0.10.1
 
-# Changes since 0.9:
+# Changes since 0.10:
 # -/0:
-# 1. + check_entry_count!(): Refuse to import when the number of CHANGELOG entries and the number
-#    of revisions disagree. Messages are matched by index, so a missing or extra entry silently
-#    shifts every message below it onto the wrong revision. Nothing else detects this, since each
-#    entry is individually well formed; there is simply one too few or too many.
-# 2. ~ main(): Check before committing anything.
+# 1. ~ commit_date(): Emit a time and a UTC offset, not just a date. git rejects a bare
+#    "2014-05-08" in GIT_AUTHOR_DATE with "fatal: invalid date format", so every commit failed.
+#    The T form is used rather than the spaced one so that no shell quoting is needed.
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -240,7 +238,7 @@ def commit_date(revision_index, entries)
   entry = entries[revision_index]
   return nil unless entry && entry[:date]
   date = Date.parse(entry[:date]) rescue nil
-  date&.strftime('%Y-%m-%d')
+  date&.to_time&.strftime('%Y-%m-%dT%H:%M:%S%z')
 end
 
 def commit_environment(revision_index, entries)
