@@ -2,6 +2,12 @@
 
 ## 20260805
 
+0.12.0: Fill in .gitignore.
+
+1. + .gitignore: The standard set of exclusions, git-boot's root commit having deliberately left the file empty. Nothing had in fact been ignored until now: .DS_Store and .claude stayed out of the imported commits only because git-import-all's glob does not match dotfiles, and would have been picked up by the first ordinary commit made in the repository.
+
+## 20260805
+
 0.11.0: Add a README, and retire the Changes section from the script header.
 
 1. + README.md: What the tool is for, the revisions convention, how entries are matched to revisions by position, the two CHANGELOG formats recognised, the relationship to git-boot and changelogger, and a note on this repository having been bootstrapped by the tool itself.
