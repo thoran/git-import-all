@@ -2,7 +2,7 @@
 # git-import-all
 
 # 20260805
-# 0.12.0
+# 0.13.0
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -17,7 +17,6 @@
 # 1. cd ~/path/to/repo; git-import-all ~/path/to/revisions/root/
 # 2. git-import-all ~/path/to/repo ~/path/to/revisions/root/
 
-require 'Array/natural_sortX'
 require 'date'
 require 'Dir/self.existQ'
 require 'fileutils'
@@ -177,6 +176,13 @@ def revisions_root
   )
 end
 
+def revision_directories
+  Dir["#{revisions_root}/*"]
+    .select{|entry| File.directory?(entry) && File.basename(entry) =~ /\A\d+\z/}
+    .sort_by{|entry| File.basename(entry).to_i}
+    .map{|entry| File.expand_path(entry)}
+end
+
 def repo
   @repo ||= (
     if second_argument?
@@ -253,7 +259,7 @@ def main(repo)
     run "cd #{repo_dir(repo)}", show: true
     run "git-boot #{repo}", show: true
   end
-  sorted_revisions = Dir["#{revisions_root}/*"].natural_sort!.map{|r| File.expand_path(r)}
+  sorted_revisions = revision_directories
   changelog_text = read_changelog(sorted_revisions)
   entries = Changelog.parse(changelog_text)
   check_entry_count!(sorted_revisions, entries)

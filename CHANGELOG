@@ -2,6 +2,15 @@
 
 ## 20260805
 
+0.13.0: Revisions are numbered directories.
+
+1. + revision_directories(): Only numbered directories are taken as revisions, sorted by their number. The glob in main() took whatever sat in the revisions root, so a stray file was imported as a revision of its own. changelogger's version_directories() has always worked this way, and the two now agree on what a revision is.
+2. ~ main(): Use revision_directories().
+3. - require 'Array/natural_sortX', along with lib/Array/natural_sortX.rb and the lib/String/natural_comparison.rb which it requires. A natural sort exists to order names which might be arbitrary, and the filter has made that impossible; nothing else uses either file.
+4. ~ README.md: Say that only numbered directories are taken as revisions, and that anything else in the revisions root is passed over.
+
+## 20260805
+
 0.12.0: Fill in .gitignore.
 
 1. + .gitignore: The standard set of exclusions, git-boot's root commit having deliberately left the file empty. Nothing had in fact been ignored until now: .DS_Store and .claude stayed out of the imported commits only because git-import-all's glob does not match dotfiles, and would have been picked up by the first ordinary commit made in the repository.

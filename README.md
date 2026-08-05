@@ -36,7 +36,7 @@ $ cd ~/path/to/repo
 $ git-import-all ~/path/to/revisions/root/
 ```
 
-The revisions root holds directories named `0`, `1`, `2` and so on, each a complete snapshot of the project at that point.
+The revisions root holds directories named `0`, `1`, `2` and so on, each a complete snapshot of the project at that point. Only numbered directories are taken as revisions: anything else in the revisions root, whether a stray file or a directory named otherwise, is passed over.
 
 Where the repository does not exist yet, run `git-boot` first, so that the history begins from a parentless `.gitignore` commit and real work is never the root.
 
