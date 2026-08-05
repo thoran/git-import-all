@@ -2,13 +2,7 @@
 # git-import-all
 
 # 20260805
-# 0.10.1
-
-# Changes since 0.10:
-# -/0:
-# 1. ~ commit_date(): Emit a time and a UTC offset, not just a date. git rejects a bare
-#    "2014-05-08" in GIT_AUTHOR_DATE with "fatal: invalid date format", so every commit failed.
-#    The T form is used rather than the spaced one so that no shell quoting is needed.
+# 0.11.0
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.

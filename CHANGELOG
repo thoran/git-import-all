@@ -2,6 +2,13 @@
 
 ## 20260805
 
+0.11.0: Add a README, and retire the Changes section from the script header.
+
+1. + README.md: What the tool is for, the revisions convention, how entries are matched to revisions by position, the two CHANGELOG formats recognised, the relationship to git-boot and changelogger, and a note on this repository having been bootstrapped by the tool itself.
+2. - The Changes section from the script header. The CHANGELOG holds that record now, and keeping both invites them to disagree. Revisions 0 to 31 keep theirs, being the source from which the CHANGELOG was reconstructed and the only record of what changed for 0.1.0 onward.
+
+## 20260805
+
 0.10.1: Emit a commit date git will accept.
 
 1. ~ commit_date(): Emit a time and a UTC offset, not just a date. git rejects a bare "2014-05-08" in GIT_AUTHOR_DATE with "fatal: invalid date format", so every commit failed. The T form is used rather than the spaced one so that no shell quoting is needed.
