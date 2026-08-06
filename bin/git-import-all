@@ -2,7 +2,7 @@
 # git-import-all
 
 # 20260805
-# 0.13.0
+# 0.13.1
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -22,6 +22,7 @@ require 'Dir/self.existQ'
 require 'fileutils'
 require 'impuri'
 require 'Kernel/run'
+require 'shellwords'
 
 module Changelog
   ITEM = /\A\d+\.\s+(.*)\z/
@@ -272,7 +273,7 @@ def main(repo)
     end
     message = commit_message(index, entries)
     run 'git add -A', show: true
-    run "#{commit_environment(index, entries)}git commit -m \"#{message}\"", show: true
+    run "#{commit_environment(index, entries)}git commit -m #{Shellwords.escape(message)}", show: true
   end
 end
 

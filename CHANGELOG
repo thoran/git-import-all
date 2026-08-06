@@ -2,6 +2,13 @@
 
 ## 20260805
 
+0.13.1: Quote the commit message, so that the shell cannot interpret it.
+
+1. ~ main(): Escape the message with Shellwords rather than wrapping it in double quotes. A summary containing $PWD was expanded to the working directory; one containing backticks or $(...) would have been executed, and one containing a quote would have broken the command outright. Found while importing changelogger, whose 0.2.0 summary is "Implicit $PWD.".
+2. + require 'shellwords'
+
+## 20260805
+
 0.13.0: Revisions are numbered directories.
 
 1. + revision_directories(): Only numbered directories are taken as revisions, sorted by their number. The glob in main() took whatever sat in the revisions root, so a stray file was imported as a revision of its own. changelogger's version_directories() has always worked this way, and the two now agree on what a revision is.
