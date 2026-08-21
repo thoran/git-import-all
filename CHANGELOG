@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 20260821
+
+0.14.0: Read every version beneath a date heading, not only the first.
+
+1. ~ Changelog.parse(): flat_map over the chunks, and the reverse moved off the chunks onto the flattened list. A heading standing over several versions holds them newest-first as the file does, so reversing the chunks alone left those in the wrong order.
+2. ~ DatedHeading.parse(): an entry per versioned summary beneath the heading, rather than one entry for the heading. Where the body states no version it returns the single entry it did before, so a heading over one version parses exactly as it used to.
+3. + DatedHeading.versioned_blocks(): the body split at each versioned summary, each block's text beginning with its own summary line so that entry() reads the items belonging to it.
+4. + DatedHeading.unversioned_entry(): what 0.13.1 did, kept for a heading whose body names no version.
+5. ~ VersionedHeading.parse(): returns its entry in a list, every format now returning one.
+6. ~ CHANGELOG: one heading per date, thirty-six becoming thirteen. changelogger writes this form as of 0.10.0, and 20140510's fourteen versions said their date fourteen times.
+7. moby's CHANGELOG was already in this form: forty-eight versions under twenty-two headings. Parsed by 0.13.1 it yielded twenty-two entries and dropped the other twenty-six without a word, so an import of it would have made twenty-two commits for forty-eight versions and check_entry_count! would have refused on a count nothing explained.
+
+
 ## 20260805
 
 0.13.1: Quote the commit message, so that the shell cannot interpret it.
@@ -7,7 +20,6 @@
 1. ~ main(): Escape the message with Shellwords rather than wrapping it in double quotes. A summary containing $PWD was expanded to the working directory; one containing backticks or $(...) would have been executed, and one containing a quote would have broken the command outright. Found while importing changelogger, whose 0.2.0 summary is "Implicit $PWD.".
 2. + require 'shellwords'
 
-## 20260805
 
 0.13.0: Revisions are numbered directories.
 
@@ -16,31 +28,28 @@
 3. - require 'Array/natural_sortX', along with lib/Array/natural_sortX.rb and the lib/String/natural_comparison.rb which it requires. A natural sort exists to order names which might be arbitrary, and the filter has made that impossible; nothing else uses either file.
 4. ~ README.md: Say that only numbered directories are taken as revisions, and that anything else in the revisions root is passed over.
 
-## 20260805
 
 0.12.0: Fill in .gitignore.
 
 1. + .gitignore: The standard set of exclusions, git-boot's root commit having deliberately left the file empty. Nothing had in fact been ignored until now: .DS_Store and .claude stayed out of the imported commits only because git-import-all's glob does not match dotfiles, and would have been picked up by the first ordinary commit made in the repository.
 
-## 20260805
 
 0.11.0: Add a README, and retire the Changes section from the script header.
 
 1. + README.md: What the tool is for, the revisions convention, how entries are matched to revisions by position, the two CHANGELOG formats recognised, the relationship to git-boot and changelogger, and a note on this repository having been bootstrapped by the tool itself.
 2. - The Changes section from the script header. The CHANGELOG holds that record now, and keeping both invites them to disagree. Revisions 0 to 31 keep theirs, being the source from which the CHANGELOG was reconstructed and the only record of what changed for 0.1.0 onward.
 
-## 20260805
 
 0.10.1: Emit a commit date git will accept.
 
 1. ~ commit_date(): Emit a time and a UTC offset, not just a date. git rejects a bare "2014-05-08" in GIT_AUTHOR_DATE with "fatal: invalid date format", so every commit failed. The T form is used rather than the spaced one so that no shell quoting is needed.
 
-## 20260805
 
 0.10.0: Refuse to import when the entry count and the revision count disagree.
 
 1. + check_entry_count!(): Messages are matched by index, so a missing or extra entry silently shifts every message below it onto the wrong revision. Nothing else detects this, since each entry is individually well formed; there is simply one too few or too many.
 2. ~ main(): Check before committing anything.
+
 
 ## 20260804
 
@@ -51,7 +60,6 @@
 3. ~ main(): Commit with the entry's date.
 4. + require 'date'
 
-## 20260804
 
 0.8.0: Dispatch each CHANGELOG entry to a named format, and fail rather than guess.
 
@@ -61,12 +69,14 @@
 4. + Changelog::Format.for(): Dispatch per entry, requiring exactly one format to match. Nothing matching, or more than one matching, raises rather than silently yielding a wrong message.
 5. - heading_summary(), parse_entries().
 
+
 ## 20260731
 
 0.7.0: Read a version and a date out of any of the CHANGELOG heading styles in use.
 
 1. + heading_summary(): Strip the version and date out of a heading, leaving the summary.
 2. ~ parse_entries(): Scan the ## heading for a version and a date independently, rather than matching one rigid form. Assignment is with ||=, so a later ## line within an entry cannot overwrite values already found.
+
 
 ## 20260504
 
@@ -76,6 +86,7 @@
 2. /parse_latest_entry/parse_entries/: Return all entries indexed oldest-first.
 3. ~ commit_message(): Match revision index to corresponding CHANGELOG entry.
 4. ~ main(): Parse entries once, pass index to commit_message().
+
 
 ## 20260320
 
@@ -87,6 +98,7 @@
 4. + commit_message()
 5. ~ main(): Use commit_message() instead of a generic message.
 6. - require 'File/self.basename_without_extname': Unused since 0.4.0, when automatic pushing to a remote was removed.
+
 
 ## 20200208
 
@@ -102,6 +114,7 @@
 8. - remote_repository_exist?()
 9. - repo_remote_and_exist?()
 
+
 ## 20200111
 
 0.3.0: Bundle the required libraries.
@@ -109,11 +122,13 @@
 1. + Gemfile
 2. + ./lib
 
+
 ## 20181106
 
 0.2.5: Correct the examples.
 
 1. ~ Examples, so that we are left with something that actually works.
+
 
 ## 20141220
 
@@ -121,19 +136,16 @@
 
 1. + Examples
 
-## 20141220
 
 0.2.3: Route shell work through Kernel#run.
 
 1. + require 'Kernel/run' and use thereof, replacing some FileUtils and Dir class methods as well as some uses of puts() and system().
 
-## 20141220
 
 0.2.2: Quieten the output.
 
 1. - Any diagnostic output.
 
-## 20141220
 
 0.2.1: Fix argument handling and preserve the working directory.
 
@@ -141,11 +153,13 @@
 2. ~ repo(): Check for the existence of ARGV[1], then assign ARGV[0] if it is missing.
 3. ~ local_repository_exist?(): It was chdir'ing to the repo and the revisions root, which is otherwise the default pwd, is being lost.
 
+
 ## 20140728
 
 0.2.0: Record outstanding work.
 
 1. + Todo
+
 
 ## 20140710
 
@@ -154,6 +168,7 @@
 1. + repo(): Checks for the presence of ARGV[1] before attempting to use it, as well as being memoized.
 2. + revisions_root(): Memoized, though since only used once really there for consistency with ARGV[1].
 3. + main(): Just 'cause it's neater is about all.
+
 
 ## 20140510
 
@@ -164,89 +179,77 @@
 3. + require 'Dir/self.exist?'
 4. + require 'ImpURI'
 
-## 20140510
 
 0.0.14: Stage deletions as well as additions.
 
 1. /git commit -a/git add -A . followed by git commit/, so that removals are staged.
 
-## 20140510
 
 0.0.13: Commit with a single command.
 
 1. /system "rm -rf"/FileUtils.rm_rf()/
 2. /git add . followed by git commit/git commit -a/
 
-## 20140510
 
 0.0.12: Shell out for removal.
 
 1. /FileUtils.rm_rf()/system "rm -rf"/
 
-## 20140510
 
 0.0.11: Clear only the repository's top level.
 
 1. ~ The removal glob: recursive descent replaced by the top level alone.
 
-## 20140510
 
 0.0.10: Remove directories as well as files.
 
 1. /FileUtils.rm_f()/FileUtils.rm_rf()/
 
-## 20140510
 
 0.0.9: Give the automatic commits a message.
 
 1. ~ The commit message: an empty string replaced by "Committed automatically by git-importall."
 
-## 20140510
 
 0.0.8: Supply a commit message, since git commit alone opens an editor.
 
 1. /git commit/git commit -m ""/
 
-## 20140510
 
 0.0.7: Stage new files before committing.
 
 1. + git add .
 2. /git commit -a/git commit/
 
-## 20140510
 
 0.0.6: Commit and push for real.
 
 1. ~ Reinstated the commit, which had been left disabled while testing.
 2. + git push
 
-## 20140510
 
 0.0.5: Clear the repository entry by entry.
 
 1. ~ Removal: the repository directory itself replaced by each entry within it, so that the directory survives.
 2. ~ Copying: the revision directory replaced by each entry within it, so that its contents land in the repository rather than the revision directory itself.
 
-## 20140510
 
 0.0.4: Clear the repository before each revision is copied in.
 
 1. + FileUtils.rm_rf(repo_dir)
 
-## 20140510
 
 0.0.3: Correct the copy.
 
 1. /FileUtils.cp_pr()/FileUtils.cp_r()/, there being no cp_pr().
 
-## 20140510
 
 0.0.2: Echo commands and hold off committing while testing.
 
 1. /ARG/ARGV/
 2. + Echoing of each command before it is run.
 3. ~ Commented out the commit.
+
 
 ## 20140508
 
@@ -256,7 +259,6 @@
 2. ~ chdir to the repository rather than the revisions root.
 3. ~ The revisions glob: now by absolute path.
 
-## 20140508
 
 0.0.0: Copy each revision into a repository and commit it.
 

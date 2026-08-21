@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20260805
-# 0.13.1
+# 20260821
+# 0.14.0
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -64,20 +64,37 @@ module Changelog
           !(heading(text) =~ HEADING).nil?
         end
 
+        # A heading may stand over more than one version, changelogger writing one
+        # heading per date as of 0.10.0 rather than one per version.  Each versioned
+        # summary beneath a heading begins an entry and they share its date; a
+        # heading with one version beneath it is a run of one, so the older form
+        # parses exactly as before.
         def parse(text)
-          version = nil
-          summary = nil
-          body_lines(text).each do |line|
-            next if line.empty? || line =~ Changelog::ITEM || line.start_with?('#')
+          date = heading(text)[HEADING, 1]
+          blocks = versioned_blocks(text)
+          return [unversioned_entry(text, date)] if blocks.empty?
+          blocks.collect{|block| entry(block[:version], date, block[:summary], block[:text])}
+        end
+
+        private
+
+        # Each block's text begins with its own summary line, so that the items
+        # beneath it are what entry() reads where no summary was stated.
+        def versioned_blocks(text)
+          body_lines(text).each_with_object([]) do |line, blocks|
             if line =~ VERSIONED_SUMMARY
-              version = $1
-              summary = $2.strip
-            else
-              summary = line
+              blocks << {version: $1, summary: $2.strip, text: "#{line}\n"}
+            elsif !blocks.empty?
+              blocks.last[:text] += "#{line}\n"
             end
-            break
           end
-          entry(version, heading(text)[HEADING, 1], summary, text)
+        end
+
+        def unversioned_entry(text, date)
+          summary = body_lines(text).detect do |line|
+            !line.empty? && !(line =~ Changelog::ITEM) && !line.start_with?('#')
+          end
+          entry(nil, date, summary, text)
         end
       end
     end
@@ -101,7 +118,7 @@ module Changelog
           line = heading(text).sub(/\A##\s+/, '')
           version = line[Changelog::VERSION, 1]
           date = line[Changelog::DATE, 1]
-          entry(version, date, summary(line, version, date) || trailing_summary(text), text)
+          [entry(version, date, summary(line, version, date) || trailing_summary(text), text)]
         end
 
         private
@@ -143,7 +160,10 @@ module Changelog
   class << self
     def parse(text)
       return [] unless text
-      chunks(text).reverse.map{|chunk| Format.for(chunk).parse(chunk)}
+      # Flattened in the order the file states them, newest first, and reversed
+      # once at the end: a heading standing over several versions holds them in
+      # that same order, so reversing the chunks alone left those in the wrong one.
+      chunks(text).flat_map{|chunk| Format.for(chunk).parse(chunk)}.reverse
     end
 
     private
