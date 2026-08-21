@@ -2,6 +2,16 @@
 
 ## 20260821
 
+0.14.1: - Dir/self.existQ, the platform having caught up with it.
+
+1. - require 'Dir/self.existQ', - lib/Dir/self.existQ.rb. It defines Dir.exist? as File.directory?, and this called Dir.exist? in repository_exist?, so it was in use rather than dead: grepping for existQ finds nothing but the require, the use being through the name it overrides.
+2. Why it goes: Dir.exist? has been a builtin since 1.9.2, and the two agree upon every case tried — a directory, a file, a symlink to a directory, a missing path, an empty string, nil, an Integer. So it substituted C for an identical Ruby copy, which is slower and a surprise in a backtrace.
+3. Why it was right: written 2011.03.11, seven months after 1.9.2, but macOS shipped 1.8.7 as its system ruby until 2013 and 1.8.7 has no Dir.exist?. It was the implementation for the ruby actually to hand, and stopped being needed at some point across fourteen years without anything to mark the moment.
+4. ~/lib/ruby keeps its copy at 0.0.1: this removes the vendored one, not the original.
+5. Nothing else here wanted anything. audit_requires reports nothing missing, and vendor_requires would copy fourteen further files in which are not wanted, every one of those paths being answered by impuri, which the Gemfile declares and the formula vendors.
+6. ~ bin/git-import-all: /0.14.0/0.14.1/
+
+
 0.14.0: Read every version beneath a date heading, not only the first.
 
 1. ~ Changelog.parse(): flat_map over the chunks, and the reverse moved off the chunks onto the flattened list. A heading standing over several versions holds them newest-first as the file does, so reversing the chunks alone left those in the wrong order.

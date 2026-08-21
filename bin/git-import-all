@@ -2,7 +2,7 @@
 # git-import-all
 
 # 20260821
-# 0.14.0
+# 0.14.1
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -18,7 +18,6 @@
 # 2. git-import-all ~/path/to/repo ~/path/to/revisions/root/
 
 require 'date'
-require 'Dir/self.existQ'
 require 'fileutils'
 require 'impuri'
 require 'Kernel/run'
