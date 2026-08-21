@@ -2,6 +2,12 @@
 
 ## 20260821
 
+0.14.2: + LICENSE, which the README has named without one being present.
+
+1. + LICENSE: the MIT text, copyright 2014-2026 thoran. The year is the CHANGELOG's earliest entry rather than the first commit: this history was imported from numbered revisions, which reach back further than the repository does. The README has answered "MIT" under a heading of its own while the repository carried no licence text at all, so anyone taking it at its word had nothing to read and nothing to comply with.
+2. ~ bin/git-import-all: /0.14.1/0.14.2/, and the date.
+
+
 0.14.1: - Dir/self.existQ, the platform having caught up with it.
 
 1. - require 'Dir/self.existQ', - lib/Dir/self.existQ.rb. It defines Dir.exist? as File.directory?, and this called Dir.exist? in repository_exist?, so it was in use rather than dead: grepping for existQ finds nothing but the require, the use being through the name it overrides.
