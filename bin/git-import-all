@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20260821
-# 0.14.2
+# 20260823
+# 0.14.3
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -52,7 +52,7 @@ module Changelog
 
       BOUNDARY = /^##\s+\d{8}\s*$/
       HEADING = /\A##\s+(\d{8})\s*\z/
-      VERSIONED_SUMMARY = /\A(\d+(?:\.\d+)+):\s*(.*)\z/
+      VERSIONED_SUMMARY = /\A(\d+(?:\.\d+)+)(?::\s*(.*))?\z/
 
       class << self
         def key
@@ -79,10 +79,14 @@ module Changelog
 
         # Each block's text begins with its own summary line, so that the items
         # beneath it are what entry() reads where no summary was stated.
+        # A version line need not carry a summary: changelogger writes it bare where
+        # the revision it read had no marker to take one from.  Bare, the entry takes
+        # its first item instead, which is what entry() does with a nil summary.
         def versioned_blocks(text)
           body_lines(text).each_with_object([]) do |line, blocks|
             if line =~ VERSIONED_SUMMARY
-              blocks << {version: $1, summary: $2.strip, text: "#{line}\n"}
+              summary = $2.to_s.strip
+              blocks << {version: $1, summary: (summary.empty? ? nil : summary), text: "#{line}\n"}
             elsif !blocks.empty?
               blocks.last[:text] += "#{line}\n"
             end

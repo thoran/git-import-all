@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 20260823
+
+0.14.3: A version line without a summary begins an entry, changelogger writing one bare.
+
+1. ~ Changelog::Format::DatedHeading::VERSIONED_SUMMARY: the colon and the summary are optional. changelogger writes `0.3.0` bare where the revision it read carried a Changes section with no marker to take a summary from, and five of the Browser library's sixteen are written that way. Alone beneath its own heading such an entry parses, the heading separating it; sharing a heading with another it did not, having nothing to begin a block, and was folded into its neighbour.
+2. ~ versioned_blocks(): a bare version line gives no summary, so the entry takes its first item instead, which is what entry() already does where a summary is absent. 0.3.0's is "Moved Browser::Base to own file."
+3. Where it showed: the Browser library parsed to fourteen entries for sixteen revisions, then fifteen once changelogger 0.14.0 gave three headings their real dates, which moved 0.3.0 under a heading it shared. check_entry_count! refuses anything but agreement, so the import would not run at all.
+4. Sixteen for sixteen now, in order, every version and date read.
+5. ~ bin/git-import-all: /0.14.2/0.14.3/, and the date.
+
+
 ## 20260821
 
 0.14.2: + LICENSE, which the README has named without one being present.
