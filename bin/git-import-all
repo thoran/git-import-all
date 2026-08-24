@@ -2,7 +2,7 @@
 # git-import-all
 
 # 20260824
-# 0.15.0
+# 0.15.1
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -255,10 +255,22 @@ def commit_date(revision_index, entries)
   date&.to_time&.strftime('%Y-%m-%dT%H:%M:%S%z')
 end
 
+# The author date is when the work was authored, which a CHANGELOG knows to the
+# day, midnight saying the day is known and the hour is not.  The committer date
+# is when the commit was made, which is now: stamping it with the CHANGELOG's
+# date states that a commit was made upon a day it was not, sometimes years
+# earlier.  Left unset, git takes the time of the commit, which is what every
+# other rewrite does — filter-branch, rebase, am and cherry-pick each keep the
+# author date and take a fresh committer date.
+#
+# The cost is that an import is no longer reproducible: run twice over the same
+# revisions it now yields different commits, where before it yielded the same
+# ones.  A switch could have that back where it is ever wanted; a false date by
+# default is too much to pay for it.
 def commit_environment(revision_index, entries)
   date = commit_date(revision_index, entries)
   return '' unless date
-  "GIT_AUTHOR_DATE=#{date} GIT_COMMITTER_DATE=#{date} "
+  "GIT_AUTHOR_DATE=#{date} "
 end
 
 def check_entry_count!(sorted_revisions, entries)

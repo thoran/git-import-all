@@ -2,6 +2,14 @@
 
 ## 20260824
 
+0.15.1: Set the author date alone, the committer date having been stated as a day the commit was not made upon.
+
+1. ~ bin/git-import-all: ~ commit_environment(): - GIT_COMMITTER_DATE. The author date is when the work was authored, which a CHANGELOG knows to the day; the committer date is when the commit was made, which is during the import. Setting both from the entry stated that every imported commit was made upon a day it was not, sometimes years earlier. Left unset, git takes the time of the commit, which is what filter-branch, rebase, am and cherry-pick each do: keep the author date, take a fresh committer date.
+2. It shows in little, which is why it stood: `git log` prints one date and it is the author's, so the false one is reached only through `--pretty=fuller`, `%ci`, or a sort by commit date.
+3. The cost is reproducibility. An import run twice over the same revisions now yields different commits where before it yielded the same ones. A switch could have that back where it is wanted; a false date by default is too much to pay for it.
+4. Nothing already imported is corrected by this. The commits which carry it are fixed only by rewriting them, which for a pushed repository means every SHA moving and every tag re-pointing, to correct a field almost nothing reads. tap-audit's fifteen were rewritten because they were unpushed and free to rewrite.
+
+
 0.15.0: - two requires, the git-boot branch and repo_dir, each left by a decision already taken.
 
 1. - require 'fileutils': dead since 0.2.3, which routed shell work through Kernel#run and replaced every FileUtils call with a shelled-out one. The require stayed.
