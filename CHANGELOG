@@ -2,6 +2,14 @@
 
 ## 20260824
 
+0.15.2: Run git add and git commit against the repository, not the working directory.
+
+1. ~ main(): git add -A and git commit ran wherever the process happened to be, so the import only worked when run from inside the target repository. The rm and cp used absolute paths and were unaffected, which is why it looked like it worked. Both git commands now take git -C #{repo}.
+2. It had never worked from elsewhere: the dead `run "cd ..."` removed at 0.15.0 was the last trace of an attempt to set the directory, and a subshell cd could not have carried across separate run calls anyway.
+3. Met importing the Browser library, whose repository sat beside the invocation rather than beneath it.
+4. ~ bin/git-import-all: /0.15.1/0.15.2/
+
+
 0.15.1: Set the author date alone, the committer date having been stated as a day the commit was not made upon.
 
 1. ~ bin/git-import-all: ~ commit_environment(): - GIT_COMMITTER_DATE. The author date is when the work was authored, which a CHANGELOG knows to the day; the committer date is when the commit was made, which is during the import. Setting both from the entry stated that every imported commit was made upon a day it was not, sometimes years earlier. Left unset, git takes the time of the commit, which is what filter-branch, rebase, am and cherry-pick each do: keep the author date, take a fresh committer date.
