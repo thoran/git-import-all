@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 20260824
+
+0.15.0: - two requires, the git-boot branch and repo_dir, each left by a decision already taken.
+
+1. - require 'fileutils': dead since 0.2.3, which routed shell work through Kernel#run and replaced every FileUtils call with a shelled-out one. The require stayed.
+2. - require 'impuri': never used, in any commit, under either name. It arrived at 0.5.0 with the rename from git-importall, which carried a require block forward wholesale.
+3. - the git-boot branch in main(): unreachable since 0.4.0, "Make it work locally only, since we have git push for the other bit", which gave repo_dir its nil-returning form. repository_exist?(nil) raises TypeError before the branch body runs, so `mkdir -p`, `cd` and `git-boot` have not run since. The `cd` was doing nothing regardless, a subshell's working directory being its own.
+4. + a refusal in its place, naming the directory and saying that this imports into a repository rather than creating one, where it raised `TypeError: no implicit conversion of nil into String`, which names nothing. It refused before and refuses now, both with exit 1: only the legibility changes.
+5. - repo_dir(): it held the existence check, which has moved into main() where it is acted upon. What was left returned its argument, and both call sites are within main(repo), where repo is already named.
+6. A minor rather than a patch because the reference to git-boot goes, and with it the claim that this creates the repository it imports into. Whether that path ran is beside the point: 0.1.0 added it deliberately — "Issue a git-boot if the remote repository does not exist" — and anyone reading the source would have believed it. Removing a capability the program stated is a minor however long it had been broken.
+7. ~ git-import-all.rb in the tap: - resource 'impuri', a gem fetched, checksummed and installed upon every build for a require never once exercised, and with it the whole of the vendoring — GEM_HOME, GEM_PATH, resources.each(&:fetch), and a gem install whose argument list was the empty splat of no resources. RUBYLIB stays, lib/Kernel/run.rb being reached that way.
+8. ~ bin/git-import-all: /0.14.3/0.15.0/, and the date.
+
+
 ## 20260823
 
 0.14.3: A version line without a summary begins an entry, changelogger writing one bare.

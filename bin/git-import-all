@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20260823
-# 0.14.3
+# 20260824
+# 0.15.0
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -18,8 +18,6 @@
 # 2. git-import-all ~/path/to/repo ~/path/to/revisions/root/
 
 require 'date'
-require 'fileutils'
-require 'impuri'
 require 'Kernel/run'
 require 'shellwords'
 
@@ -226,14 +224,6 @@ def repository_exist?(repo)
   return_value
 end
 
-def repo_dir(repo)
-  @repo_dir ||= (
-    if repository_exist?(repo)
-      repo
-    end
-  )
-end
-
 def read_changelog(sorted_revisions)
   sorted_revisions.reverse_each do |candidate|
     ['CHANGELOG.md', 'CHANGELOG'].each do |filename|
@@ -278,21 +268,21 @@ def check_entry_count!(sorted_revisions, entries)
 end
 
 def main(repo)
-  unless repository_exist?(repo_dir(repo))
-    run "mkdir -p #{repo_dir(repo)}", show: true
-    run "cd #{repo_dir(repo)}", show: true
-    run "git-boot #{repo}", show: true
+  unless repository_exist?(repo)
+    $stderr.puts "#{repo} is not a git repository."
+    $stderr.puts 'Make one first, with git init or git-boot: this imports into a repository, it does not create one.'
+    exit 1
   end
   sorted_revisions = revision_directories
   changelog_text = read_changelog(sorted_revisions)
   entries = Changelog.parse(changelog_text)
   check_entry_count!(sorted_revisions, entries)
   sorted_revisions.each_with_index do |revision, index|
-    Dir["#{repo_dir(repo)}/*"].each do |filename|
+    Dir["#{repo}/*"].each do |filename|
       run "rm -rf #{filename}", show: true
     end
     Dir["#{revision}/*"].each do |filename|
-      run "cp -r #{filename} #{repo_dir(repo)}", show: true
+      run "cp -r #{filename} #{repo}", show: true
     end
     message = commit_message(index, entries)
     run 'git add -A', show: true
