@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20260824
-# 0.15.2
+# 20261005
+# 0.16.0
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
@@ -68,9 +68,9 @@ module Changelog
         # parses exactly as before.
         def parse(text)
           date = heading(text)[HEADING, 1]
-          blocks = versioned_blocks(text)
-          return [unversioned_entry(text, date)] if blocks.empty?
-          blocks.collect{|block| entry(block[:version], date, block[:summary], block[:text])}
+          found = blocks(text)
+          return [unversioned_entry(text, date)] if found.empty?
+          found.collect{|block| entry(block[:version], date, block[:summary], block[:text])}
         end
 
         private
@@ -80,14 +80,39 @@ module Changelog
         # A version line need not carry a summary: changelogger writes it bare where
         # the revision it read had no marker to take one from.  Bare, the entry takes
         # its first item instead, which is what entry() does with a nil summary.
-        def versioned_blocks(text)
+        #
+        # An entry begins at a line stating a version, as it always has, and also
+        # after the two blank lines changelogger writes between one entry and the
+        # next, so that an entry stating no version is an entry of its own rather
+        # than part of the one above it.  changelogger 0.19.0 writes such an entry
+        # for a snapshot, a revision whose header states neither a new version nor
+        # a new item; before this a tree holding snapshots parsed to fewer entries
+        # than it had revisions, and the import refused it.
+        def blocks(text)
+          separated = true
+          blanks = 0
           body_lines(text).each_with_object([]) do |line, blocks|
+            if line.empty?
+              blanks += 1
+              separated = true if blanks > 1
+              blocks.last[:text] += "\n" unless blocks.empty?
+              next
+            end
             if line =~ VERSIONED_SUMMARY
               summary = $2.to_s.strip
               blocks << {version: $1, summary: (summary.empty? ? nil : summary), text: "#{line}\n"}
-            elsif !blocks.empty?
+            elsif separated
+              # An entry whose first line is itself an item takes that item as its
+              # summary, stated here rather than left to entry(): items() reads a
+              # text's lines after its first, that first being a summary line, and
+              # would pass over the very item this block begins at.
+              summary = line =~ Changelog::ITEM ? $1 : line
+              blocks << {version: nil, summary: summary, text: "#{line}\n"}
+            else
               blocks.last[:text] += "#{line}\n"
             end
+            blanks = 0
+            separated = false
           end
         end
 
@@ -237,12 +262,11 @@ end
 def commit_message(revision_index, entries)
   entry = entries[revision_index]
   if entry
-    prefix = entry[:version] || entry[:date]
-    if prefix
-      "#{prefix}: #{entry[:summary]}"
-    else
-      entry[:summary]
-    end
+    # An entry stating a version says so in the subject; one stating none takes
+    # its summary alone, a subject stating a version being a version.  The date
+    # had stood in the version's place, which read as one, and the commit states
+    # its date already in its author date.
+    entry[:version] ? "#{entry[:version]}: #{entry[:summary]}" : entry[:summary]
   else
     "Committed automatically by git-import-all."
   end
@@ -302,4 +326,6 @@ def main(repo)
   end
 end
 
-main(repo)
+# Run when run, and not when required, so that the parser may be exercised
+# without an import, as git-boot's is.
+main(repo) if __FILE__ == $0

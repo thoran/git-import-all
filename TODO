@@ -1,0 +1,3 @@
+# git-import-all/TODO
+
+1. A suite for the parser.  `main(repo) if __FILE__ == $0` is in place so that it can be exercised without an import, and `Changelog.parse` is pure: a CHANGELOG in, entries out.  Wanted most for the formats and the entry boundaries, `DatedHeading` over several versions beneath one heading and over an entry stating no version among them, `VersionedHeading`, and the summary an entry takes where it states none.

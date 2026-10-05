@@ -1,4 +1,15 @@
-# CHANGELOG
+# git-import-all/CHANGELOG
+
+## 20261005
+
+0.16.0: An entry begins at the blank lines between entries as well as at a version.
+
+1. ~ Changelog::Format::DatedHeading, /versioned_blocks/blocks/: an entry begins at a line stating a version, as it always has, and now also after the two blank lines changelogger writes between one entry and the next. An entry stating no version had been read as part of the entry above it, so a CHANGELOG holding one parsed to fewer entries than the revisions it describes and the import refused it; changelogger 0.19.0 writes such an entry for a snapshot. An entry whose first line is itself an item takes that item as its summary, stated when the block is made rather than left to entry(), which reads a text's lines after its first and would otherwise pass over the very item the block begins at.
+2. ~ commit_message(): an entry stating no version takes its summary alone as the subject, the date having stood in the version's place, where it reads as a version, and a commit stating its date in its author date already.
+3. + the run guard, `main(repo) if __FILE__ == $0`, so that the parser may be exercised without an import, as git-boot's is.
+4. + TODO: a suite for the parser, which the run guard is in place for.
+5. ~ bin/git-import-all: /0.15.2/0.16.0/, and the date.
+
 
 ## 20260824
 
