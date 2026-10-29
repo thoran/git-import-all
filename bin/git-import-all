@@ -1,12 +1,13 @@
 #!/usr/bin/env ruby
 # git-import-all
 
-# 20261005
-# 0.16.0
+# 20261030
+# 0.17.0
 
 # Notes:
 # 1. For the time being this will use the same directory as is used by clone.
 # 2. Optionally run changelogger on the revisions root before running this script.
+# 3. Where the revisions root holds a revisions.yml, each commit's message and author date are taken from it and no CHANGELOG is read.
 
 # Todo:
 # 1. Accommodate for when there is a local repository, but none remotely, since that is a possibility. (Done as of 0.4.0; essentially by removing any reference to a remote repository at all.)
@@ -16,10 +17,13 @@
 # Examples:
 # 1. cd ~/path/to/repo; git-import-all ~/path/to/revisions/root/
 # 2. git-import-all ~/path/to/repo ~/path/to/revisions/root/
+# 3. git-import-all ~/path/to/repo ~/path/to/revisions/root/, where ~/path/to/revisions/root/revisions.yml states each commit.
 
 require 'date'
 require 'Kernel/run'
 require 'shellwords'
+require 'tempfile'
+require 'yaml'
 
 module Changelog
   ITEM = /\A\d+\.\s+(.*)\z/
@@ -207,6 +211,78 @@ module Changelog
   end
 end
 
+# A revisions.yml states each commit whole: the revision it describes, its
+# author time and its message.  Any other key is provenance and is passed over.
+# The whole file is checked before anything is committed, so that a file which
+# is wrong anywhere commits nothing.
+module Revisions
+  FILENAME = 'revisions.yml'
+  DAY = /\A\d{4}-\d{2}-\d{2}\z/
+  TIME = /\A\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [+-]\d{4}\z/
+
+  class Invalid < RuntimeError; end
+
+  class << self
+    def parse(text, sorted_revisions)
+      entries = list(text)
+      sorted_revisions.first(entries.length).each_with_index do |revision, index|
+        check_entry!(entries[index], index, File.basename(revision).to_i)
+      end
+      check_count!(entries, sorted_revisions)
+      entries.collect{|entry| {message: entry['message'], author_date: author_date(entry['time'])}}
+    end
+
+    private
+
+    def list(text)
+      data = YAML.safe_load(text, permitted_classes: [Date, Time])
+      entries = data['revisions'] if data.is_a?(Hash)
+      raise Invalid, "#{FILENAME} has no top-level revisions list." unless entries.is_a?(Array)
+      entries
+    rescue Psych::Exception => e
+      raise Invalid, "#{FILENAME} does not parse: #{e.message}"
+    end
+
+    def check_entry!(entry, index, number)
+      refuse(index, 'is not a mapping') unless entry.is_a?(Hash)
+      unless entry['revision'] == number
+        refuse(index, "states revision #{entry['revision'].inspect} where the directory at its place is #{number}")
+      end
+      unless entry['time'].is_a?(String) && author_date(entry['time'])
+        refuse(index, "has a time which does not parse: #{entry['time'].inspect}")
+      end
+      unless entry['message'].is_a?(String) && !entry['message'].strip.empty?
+        refuse(index, "has no message")
+      end
+    end
+
+    def check_count!(entries, sorted_revisions)
+      if entries.length > sorted_revisions.length
+        refuse(sorted_revisions.length, "has no directory: #{entries.length} entries for #{sorted_revisions.length} revisions")
+      elsif entries.length < sorted_revisions.length
+        directory = File.basename(sorted_revisions[entries.length])
+        raise Invalid, "#{FILENAME}: no entry for directory #{directory}: #{entries.length} entries for #{sorted_revisions.length} revisions."
+      end
+    end
+
+    def refuse(index, reason)
+      raise Invalid, "#{FILENAME}: revisions[#{index}] #{reason}."
+    end
+
+    # A bare day is midnight in the local zone, as a CHANGELOG's date is; a full
+    # time keeps the zone it states.
+    def author_date(time)
+      if time =~ DAY
+        Date.strptime(time, '%Y-%m-%d').to_time.strftime('%Y-%m-%dT%H:%M:%S%z')
+      elsif time =~ TIME
+        DateTime.strptime(time, '%Y-%m-%d %H:%M:%S %z').strftime('%Y-%m-%dT%H:%M:%S%z')
+      end
+    rescue Date::Error
+      nil
+    end
+  end
+end
+
 def second_argument?
   !ARGV[1].nil?
 end
@@ -259,21 +335,39 @@ def read_changelog(sorted_revisions)
   nil
 end
 
+def revisions_path
+  "#{revisions_root}/#{Revisions::FILENAME}"
+end
+
+# A revisions.yml takes precedence, and where there is one no CHANGELOG is read.
+def entries(sorted_revisions)
+  if File.exist?(revisions_path)
+    Revisions.parse(File.read(revisions_path), sorted_revisions)
+  else
+    changelog_entries = Changelog.parse(read_changelog(sorted_revisions))
+    check_entry_count!(sorted_revisions, changelog_entries)
+    changelog_entries
+  end
+end
+
 def commit_message(revision_index, entries)
   entry = entries[revision_index]
-  if entry
+  if entry.nil?
+    "Committed automatically by git-import-all."
+  elsif entry[:message]
+    entry[:message]
+  else
     # An entry stating a version says so in the subject; one stating none takes
     # its summary alone, a subject stating a version being a version.  The date
     # had stood in the version's place, which read as one, and the commit states
     # its date already in its author date.
     entry[:version] ? "#{entry[:version]}: #{entry[:summary]}" : entry[:summary]
-  else
-    "Committed automatically by git-import-all."
   end
 end
 
 def commit_date(revision_index, entries)
   entry = entries[revision_index]
+  return entry[:author_date] if entry && entry[:author_date]
   return nil unless entry && entry[:date]
   date = Date.parse(entry[:date]) rescue nil
   date&.to_time&.strftime('%Y-%m-%dT%H:%M:%S%z')
@@ -303,6 +397,28 @@ def check_entry_count!(sorted_revisions, entries)
     'each revision takes its message from the entry at the same index, so the two must agree.'
 end
 
+def replace_contents(repo, revision)
+  Dir["#{repo}/*"].each do |filename|
+    run "rm -rf #{Shellwords.escape(filename)}", show: true
+  end
+  Dir["#{revision}/*"].each do |filename|
+    run "cp -r #{Shellwords.escape(filename)} #{Shellwords.escape(repo)}", show: true
+  end
+end
+
+# The message goes in through a file and verbatim, so that a message of several
+# lines is committed as written: git's whitespace cleanup would otherwise
+# collapse runs of blank lines and strip trailing spaces.  A one-line message,
+# which is all a CHANGELOG entry gives, commits the same either way.
+def commit(repo, revision_index, entries)
+  Tempfile.create('git-import-all') do |message_file|
+    message_file.write("#{commit_message(revision_index, entries).chomp}\n")
+    message_file.flush
+    run "git -C #{Shellwords.escape(repo)} add -A", show: true
+    run "#{commit_environment(revision_index, entries)}git -C #{Shellwords.escape(repo)} commit --cleanup=verbatim -F #{Shellwords.escape(message_file.path)}", show: true
+  end
+end
+
 def main(repo)
   unless repository_exist?(repo)
     $stderr.puts "#{repo} is not a git repository."
@@ -310,20 +426,14 @@ def main(repo)
     exit 1
   end
   sorted_revisions = revision_directories
-  changelog_text = read_changelog(sorted_revisions)
-  entries = Changelog.parse(changelog_text)
-  check_entry_count!(sorted_revisions, entries)
+  revision_entries = entries(sorted_revisions)
   sorted_revisions.each_with_index do |revision, index|
-    Dir["#{repo}/*"].each do |filename|
-      run "rm -rf #{filename}", show: true
-    end
-    Dir["#{revision}/*"].each do |filename|
-      run "cp -r #{filename} #{repo}", show: true
-    end
-    message = commit_message(index, entries)
-    run "git -C #{repo} add -A", show: true
-    run "#{commit_environment(index, entries)}git -C #{repo} commit -m #{Shellwords.escape(message)}", show: true
+    replace_contents(repo, revision)
+    commit(repo, index, revision_entries)
   end
+rescue Revisions::Invalid => e
+  $stderr.puts e.message
+  exit 1
 end
 
 # Run when run, and not when required, so that the parser may be exercised
