@@ -1,5 +1,20 @@
 # git-import-all/CHANGELOG
 
+## 20261030
+
+0.17.0: + revisions.yml: where the revisions root holds one, each commit's message and author date are taken from it and no CHANGELOG is read.
+
+1. + Revisions: parses revisions.yml and checks the whole of it before anything is committed, refusing, with the entry named, a file without a top-level revisions list, an entry missing or extra for the numbered directories, an entry whose revision is not its directory's number, a time which does not parse, or an empty message. Times running backwards are allowed, an interleaved collection keeping each series' own order where its times do not.
+2. + entries(): a revisions.yml where there is one, otherwise the CHANGELOG, as before.
+3. ~ commit_message(): an entry stating a message whole commits it.
+4. ~ commit_date(): an entry's author date where it states one: a full time keeping its zone, a bare day being midnight local, as a CHANGELOG's date is.
+5. + commit(): the message goes in through git commit -F and --cleanup=verbatim, so that a message of several lines is committed as written. A one-line message commits the same as under -m.
+6. + replace_contents(), out of main(): the paths given to rm -rf and cp -r, and the repository given to git -C, are quoted, a name holding a space having broken the import.
+7. + test/git-import-all_test.rb.
+8. ~ README: + revisions.yml, + Tests.
+9. ~ bin/git-import-all: /0.16.0/0.17.0/, the date, + Notes 3, + Examples 3.
+
+
 ## 20261005
 
 0.16.0: An entry begins at the blank lines between entries as well as at a version.
