@@ -2,7 +2,7 @@
 
 ## Description
 
-Turns a directory of numbered revisions into a git repository, one commit per revision, with each commit's message and date taken from the project's CHANGELOG.
+Turns a directory of numbered revisions into a git repository, one commit per revision, with each commit's message and date taken from a `revisions.yml` beside the revisions, or failing that from the project's CHANGELOG.
 
 It is for projects whose history predates their repository: where each version was kept as a numbered directory rather than as a commit, and that history is worth recovering rather than discarding.
 
@@ -11,7 +11,7 @@ For each revision in turn, `git-import-all`:
 1. Clears the repository's contents (`rm -rf`), leaving dotfiles alone.
 2. Copies in that revision's contents (`cp -r`).
 3. Stages everything, removals included (`git add -A`).
-4. Commits, taking the message and the date from the CHANGELOG entry at the same index.
+4. Commits, taking the message and the date from that revision's entry in `revisions.yml`, or where there is none from the CHANGELOG entry at the same index.
 
 
 ## Installation
@@ -45,6 +45,37 @@ Dotfiles are left alone, the glob not matching them. A `.gitignore` therefore su
 
 ## Where the messages come from
 
+### 1. revisions.yml
+
+Where the revisions root holds a `revisions.yml`, it states every commit and takes precedence: no CHANGELOG is read at all.
+
+```yaml
+revisions:
+- revision: 0
+  time: '2010-05-28 20:17:34 +1000'
+  message: |-
+    Voices.rb 0.0.0: + Voices, taken from Kernel/say.rb 0.2.0: the voices say knows, and a random one.
+- revision: 1
+  time: '2013-06-22'
+  message: |-
+    0.1.0: + attach()
+
+    1. ~ lib/Dmg.rb: + attach()
+  series: Dmg
+  series_revision: 0
+```
+
+- `revision` is the number of the directory the entry describes.
+- `time` is the author date: a full time with its zone, `'YYYY-MM-DD HH:MM:SS ±ZZZZ'`, or a bare day, `'YYYY-MM-DD'`, which is midnight in the local zone, as a CHANGELOG's date is. Either is a quoted string.
+- `message` is the commit message, committed as written, over as many lines as it has.
+- Any other key, such as `series`, `series_revision`, `name`, `version` or `files`, records where the entry came from and is passed over.
+
+The whole file is checked before anything is committed. There must be one entry per numbered directory, in order, each stating its directory's number, with a time which parses and a message which is not empty; failing any of these the import names the entry and commits nothing. Times running backwards are allowed and kept in the order given: a collection interleaving several series keeps each series' own order even where the times do not.
+
+`changelogger` writes one for a single program's revisions, from the same entries as its CHANGELOGs.
+
+### 2. CHANGELOG
+
 The CHANGELOG is read from the highest numbered revision which has one, and its entries are matched to revisions **by position**: the oldest entry belongs to revision `0`, the next to revision `1`, and so on. Each commit message is the entry's version and summary; each commit's date is the entry's date.
 
 Because the matching is positional, an entry too few or too many shifts every message below it onto the wrong revision, and each entry would still be perfectly well formed. The import therefore refuses to run unless the number of entries and the number of revisions agree.
@@ -77,6 +108,13 @@ The version appears in the heading itself, in any of its parenthesised, brackete
 ```
 
 Each version takes its own heading, even where two versions share a date.
+
+
+## Tests
+
+```shell
+$ ruby test/git-import-all_test.rb
+```
 
 
 ## Related tools
